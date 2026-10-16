@@ -57,14 +57,16 @@ $env:SUPABASE_URL = "https://<project-ref>.supabase.co"
 $env:SUPABASE_PUBLISHABLE_KEY = "sb_publishable_..."   # or the legacy anon key
 $env:SUPABASE_TEST_EMAIL = "test-user@example.com"
 $env:SUPABASE_TEST_PASSWORD = "<password>"
-dotnet test
+dotnet test --output Detailed   # run from this folder; global.json here selects the test runner
 ```
 
 ## Status
 
 - [x] Offline validation behaviour, including key rotation (16 tests).
-- [ ] End-to-end against a hosted project. **Pending project credentials.** This will confirm the
-  issuer format, the JWKS path, the algorithm actually issued, and the claim set (`email_verified`
-  location, `amr`, `is_anonymous`).
+- [x] End-to-end against a hosted free project, **passed 2026-10-17** (17/17, not skipped). This confirmed
+  the issuer format, the JWKS path, asymmetric signing, `role = authenticated`, and that the API's user ID
+  equals the Supabase user ID. A tampered token was rejected.
+  Not yet recorded: the exact algorithm (ES256 vs RS256) and the `email_verified` location. Confirm both
+  in Phase 1 from the `/me` response.
 - [ ] Google OAuth redirect flow. This needs a browser and is moved to Phase 1, where the login UI exists.
   Token validation is identical for OAuth sessions.

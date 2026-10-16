@@ -1,6 +1,6 @@
 # System Design Lab — Implementation Plan
 
-Status: **Approved with revisions. Phase 0 in progress.** · Last updated: 2026-10-16
+Status: **Approved with revisions. Phase 0 complete; Phase 1 not started.** · Last updated: 2026-10-17
 
 Each phase ends with **working, demonstrable functionality** and a checklist of acceptance criteria
 that can be verified by running the app or the tests. Requirement IDs (AUTH-1, PG-3, …) refer to
@@ -43,14 +43,16 @@ Supabase-issued tokens and identify users correctly.
 - [x] A: Breaking point and instances needed match hand calculations. The engine is deterministic (deep-equal results on repeated runs).
 - [x] B: Automated tests pass for all token cases. `401` responses use ProblemDetails.
 - [x] B: Signing-key rotation: a token from a newly published key is accepted without a restart, and a never-published key stays rejected.
-- [ ] B: End to end against the hosted project, a real Supabase session token is accepted and the API's user ID equals the Supabase user ID. Claims (issuer, audience, algorithm, `email_verified` source) are documented. **Outstanding.** See below.
+- [x] B: End to end against the hosted project, a real Supabase session token is accepted and the API's user ID equals the Supabase user ID. **Passed 2026-10-17** (17/17, live test not skipped). Confirmed: issuer `https://<ref>.supabase.co/auth/v1`, audience `authenticated`, JWKS at `/auth/v1/.well-known/jwks.json`, asymmetric signing (the API accepts only ES256/RS256), `role = authenticated`, UUID `sub`, and tampered tokens rejected. Still to confirm in Phase 1, where the AI gate needs it: the exact algorithm and the location of `email_verified`.
 
 Results: [prototypes/simulation/README.md](../prototypes/simulation/README.md) (30 tests) and
 [prototypes/auth-spike/README.md](../prototypes/auth-spike/README.md) (16 offline tests + 1 live test).
 
-### Outstanding Phase 0 validation — live Supabase integration test
+### Live Supabase integration test — completed 2026-10-17
 
-Phase 0 isn't complete until this passes. Phase 1 doesn't start before then.
+Passed against a hosted free development project. The steps are kept below so the test can be rerun.
+Run the command **from inside** `prototypes/auth-spike`: its `global.json` selects the Microsoft
+Testing Platform runner, and `dotnet test` only finds it from that folder.
 
 1. The product owner creates a free hosted Supabase **development** project. The current JWT signing key must be asymmetric (ECC P-256 or RSA), and a throwaway test user is created with **Auto Confirm User**.
 2. The product owner sets `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_TEST_EMAIL`, and `SUPABASE_TEST_PASSWORD` **locally** and runs `dotnet test` in `prototypes/auth-spike`. No passwords or privileged keys are shared in chat or committed. The secret/service-role key isn't needed at all.
