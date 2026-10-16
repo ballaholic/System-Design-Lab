@@ -114,7 +114,7 @@ system-design-lab/
 │  │  ├─ Common/                   # ProblemDetails, current-user accessor, pagination
 │  │  └─ Program.cs
 │  └─ tests/SystemDesignLab.Api.Tests/   # integration tests (WebApplicationFactory + Testcontainers)
-├─ supabase/                       # Supabase CLI config (local dev, Phase 1+)
+├─ supabase/                       # optional Supabase CLI config (only if local Supabase is adopted)
 ├─ docs/
 └─ .github/workflows/ci.yml
 ```
@@ -463,8 +463,8 @@ POST /api/mentor/conversations/{id}/messages        (Bearer JWT, verified email)
 ## 10. Local development and deployment
 
 **Local:**
-- Phase 0: a hosted Supabase **dev project** (free tier) for the auth spike.
-- Phase 1+: Supabase CLI (`supabase start`: Postgres, Auth, Mailpit) requires Docker Desktop. If Docker isn't available on a developer machine, the hosted dev project remains a supported fallback, and EF Core points at its Postgres.
+- A hosted Supabase **development project** (free tier) provides Auth and Postgres for local development (ADR-007). EF Core points at its Postgres (`app` schema). Verification and reset emails go through Supabase's built-in mailer, which is rate-limited but enough for development.
+- The Supabase CLI with Docker is optional. It's a configuration-only switch if offline development or isolated test databases are needed later.
 - `dotnet run` for the API and `pnpm dev` for the web app. No Docker Compose.
 
 **Deployment (provider kept configurable; target €20–40/month excluding AI):**
@@ -494,4 +494,4 @@ POST /api/mentor/conversations/{id}/messages        (Bearer JWT, verified email)
 | Canvas accessibility | Excludes keyboard and screen-reader users | Keyboard add, inspector, architecture outline; documented gap |
 | **$0.50/day may be tight for Interview mode** | A long Sonnet interview re-sends growing history each turn, so one session could use most of a day's budget (rough estimate: 30 turns at ~20k context ≈ $0.25–0.35 with caching) | Prompt caching of history, low effort, history summarization after N turns, and measuring real cost per interview in Phase 5 before launch |
 | **Email-verified gate relies on Supabase settings** | Supabase access tokens have no top-level `email_verified`; it sits in `user_metadata` | Require "Confirm email" ON in every environment (deploy checklist). Check `user_metadata.email_verified` when present. Confirm the claim shape in the Spike B end-to-end test. |
-| **Local Supabase needs Docker, which isn't installed** | Phase 1 local dev plan (ADR-007) can't run as written on the current machine | Decide at Phase 1 start: install Docker Desktop, or keep using a hosted dev project (supported fallback) |
+| **Shared hosted dev database** | Development data and schema changes live in one hosted project, and the built-in mailer is rate-limited | Resolved for now: use the hosted dev project (ADR-007). EF Core migrations target only the `app` schema. API integration tests use Testcontainers Postgres where Docker is available, otherwise a dedicated test schema. |

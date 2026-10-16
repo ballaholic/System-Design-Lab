@@ -69,17 +69,17 @@ Testing Platform runner, and `dotnet test` only finds it from that folder.
 - Web: Vite, React, Tailwind v4, shadcn setup; design tokens (dark-first, light override); app shell
   with top nav and responsive layouts; routing; error boundary; 404 page; API client with ProblemDetails
   mapping; TanStack Query provider.
-- Auth (AUTH-1…7): register, verify email (Mailpit locally), login, logout, Google OAuth, password
+- Auth (AUTH-1…7): register, verify email (hosted dev project mailer), login, logout, Google OAuth, password
   reset, `/auth/callback`, protected-route wrapper, session persistence.
 - API: minimal APIs with feature folders, JwtBearer via JWKS, `ICurrentUser`, ProblemDetails, CORS,
   rate-limiter registration, health endpoint, OpenAPI document, EF Core with Npgsql (`app` schema),
   first migration (`user_profiles`), `GET/PATCH /api/me` with lazy provisioning.
-- Local dev docs: `supabase start`, `dotnet run`, `pnpm dev`, `.env.example`.
+- Local dev docs: hosted Supabase dev project setup, `dotnet run`, `pnpm dev`, `.env.example`.
 
 **Acceptance criteria**
-- [ ] A fresh clone plus the README steps runs the web app, API, and local Supabase in under 15 minutes.
-- [ ] Register → verification email visible in Mailpit → confirm → login → header shows display name from `GET /api/me`.
-- [ ] Google OAuth login works against the local Supabase with a configured test OAuth client (or is documented as staging-only if local OAuth isn't feasible).
+- [ ] A fresh clone plus the README steps runs the web app and API against the hosted Supabase dev project in under 15 minutes.
+- [ ] Register → verification email received (hosted dev project) → confirm → login → header shows display name from `GET /api/me`.
+- [ ] Google OAuth login works against the hosted dev project with a test OAuth client (redirect URL `http://localhost:<port>/auth/callback`).
 - [ ] The password-reset email link lands on the reset page, and the new password works.
 - [ ] Reload keeps the session. Logout clears it.
 - [ ] `GET /api/me` without a token → 401 ProblemDetails. With a token from another Supabase project → 401.

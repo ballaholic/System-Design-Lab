@@ -44,7 +44,8 @@ ADR-021. ADR-011 is revised with the approved model and budget choices. ADR-022 
 
 ### ADR-007 — Single PostgreSQL: Supabase's database, EF Core owns schema `app` — **Accepted (local-dev detail revised)**
 
-- **Decision:** App tables live in the `app` schema of the Supabase Postgres. No FK to `auth.users`. Locally, use the Supabase CLI from Phase 1, which requires Docker Desktop. Phase 0 and machines without Docker use a hosted Supabase dev project. No Docker Compose.
+- **Decision:** App tables live in the `app` schema of the Supabase Postgres. No FK to `auth.users`. No Docker Compose.
+- **Local development (decided 2026-10-17):** use the **hosted free Supabase development project** (the one validated in Phase 0) for Phase 1 onward, instead of the Supabase CLI and Docker. Switching to a local Supabase later only changes configuration (project URL, keys, connection string), not code.
 - **Consequences:** One database to back up. Account deletion coordinates app rows and the auth user in code.
 
 ### ADR-008 — Challenges are versioned content files in the repo, served by the API — **Accepted**
