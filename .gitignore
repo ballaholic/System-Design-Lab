@@ -1,0 +1,24 @@
+# Node
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# .NET
+bin/
+obj/
+*.user
+TestResults/
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vs/
+.idea/
+.vscode/*
+!.vscode/extensions.json
