@@ -1,0 +1,18 @@
+{
+  "name": "@sdl/simulation-prototype",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Phase 0 Experiment A: request-flow simulation prototype (not production code)",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "report": "tsx src/report.ts"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.5",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.5"
+  }
+}
