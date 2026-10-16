@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web:
+    name: Web (lint, typecheck, test, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+      - name: Install pnpm
+        run: npm install -g pnpm@$(node -p "require('./package.json').packageManager.split('@')[1]")
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  server:
+    name: API (build, test incl. PostgreSQL)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+      - run: dotnet tool restore
+      - run: dotnet build server/SystemDesignLab.slnx -c Release
+      - name: Migrations are up to date with the model
+        run: dotnet ef migrations has-pending-model-changes --project server/src/SystemDesignLab.Api --no-build --configuration Release
+      # CI=true is set by GitHub Actions, so database tests fail instead of skipping if Docker is unavailable.
+      - name: Test (Testcontainers PostgreSQL)
+        run: dotnet test --solution server/SystemDesignLab.slnx -c Release --no-build
