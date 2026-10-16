@@ -1,0 +1,3 @@
+[*.cs]
+# Test method names use underscores for readability (e.g. Invalid_tokens_are_rejected).
+dotnet_diagnostic.CA1707.severity = none
