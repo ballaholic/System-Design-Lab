@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AuthSpike.Api/AuthSpike.Api.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/AuthSpike.Api.Tests/AuthSpike.Api.Tests.csproj" />
+  </Folder>
+</Solution>
