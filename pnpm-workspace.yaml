@@ -1,0 +1,4 @@
+# prototypes/ is intentionally excluded: Phase 0 experiments are not part of the workspace.
+packages:
+  - "apps/*"
+  - "packages/*"

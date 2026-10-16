@@ -1,0 +1,8 @@
+pnpm-lock.yaml
+prototypes/
+server/
+docs/
+**/dist/
+**/coverage/
+apps/web/src/components/ui/
+**/components.json
