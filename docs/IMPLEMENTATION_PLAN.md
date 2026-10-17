@@ -154,16 +154,16 @@ Testing Platform runner, and `dotnet test` only finds it from that folder.
   hints), stage-pass moment with an automatic snapshot.
 - Dashboard v1: continue learning, challenge progress, recent designs, empty states.
 
-**Acceptance criteria** (status 2026-10-17: implemented. Items marked *manual* need a check against the hosted Supabase project after `dotnet ef database update`.)
+**Acceptance criteria** (status 2026-10-17: complete. Manual checks passed against the hosted Supabase project.)
 - [x] The CI content check fails on an invalid challenge file (tested with a deliberately broken fixture). *(`packages/challenges/test/content.test.ts`; the check also proves each stage is solvable with its reference solution.)*
 - [x] Criteria evaluator unit tests cover each criterion kind. Simulation criteria use stage traffic, not sandbox settings.
-- [ ] A guest can complete stages 1–3 in Guided mode *(e2e ✓)*. Progress is kept locally *(e2e ✓)* and migrates on sign-in along with the design *(client and API import tests ✓; manual)*.
-- [ ] A signed-in user completes stage 1, closes the browser, returns, and the dashboard shows "Continue: URL Shortener — Stage 2". Resuming restores the design and stage. *(Dashboard and API tests ✓; manual.)*
+- [x] A guest can complete stages 1–3 in Guided mode *(e2e ✓)*. Progress is kept locally *(e2e ✓)* and migrates on sign-in along with the design *(client and API import tests ✓; checked by hand)*.
+- [x] A signed-in user completes stage 1, closes the browser, returns, and the dashboard shows "Continue: URL Shortener — Stage 2". Resuming restores the design and stage. *(Dashboard and API tests ✓; checked by hand.)*
 - [x] Estimation answers within tolerance are accepted and outside it are rejected, with the worked solution revealed after an attempt. *(Unit + e2e.)*
 - [x] Hints reveal one at a time, and the count persists. *(Unit + e2e; the API validates hint ids.)*
 - [x] Starting a new attempt while one is in progress asks the user to confirm, then abandons the old attempt (the DB constraint holds). *(e2e for guests; API tests assert a single in-progress row.)*
 - [x] A new user's dashboard shows only empty states and a single CTA. No fabricated numbers. *(Unit.)*
-- [ ] J1 steps 1–9 and 11–12 work end to end (step 10, AI review, comes in Phase 5). *(Steps 1–9 and 12 as a guest: e2e ✓. Step 11, sign-in with import: manual.)*
+- [x] J1 steps 1–9 and 11–12 work end to end (step 10, AI review, comes in Phase 5). *(Steps 1–9 and 12 as a guest: e2e ✓. Step 11, sign-in with import: checked by hand.)*
 
 ## Phase 5 — AI mentor
 
