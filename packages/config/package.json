@@ -1,0 +1,9 @@
+{
+  "name": "@sdl/config",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Shared TypeScript presets for System Design Lab packages",
+  "files": [
+    "tsconfig.base.json"
+  ]
+}

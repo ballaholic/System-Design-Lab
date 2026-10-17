@@ -160,6 +160,12 @@ The model is canonical in **TypeScript (Zod)** (ADR-003).
 React 19, TypeScript (strict), Vite, Tailwind CSS v4, shadcn/ui, **@xyflow/react v12**, Zustand,
 TanStack Query, React Router, Zod, react-hook-form, Recharts, Vitest, Testing Library, Playwright.
 
+*As built in Phase 1 (2026-10):* TypeScript 6, Vite 8, React Router 8 (same data-router API as v7), Zod 4,
+shadcn/ui (Radix base, `radix-nova` preset) with Geist and JetBrains Mono, and **oxlint** (the Vite
+template's linter, with React hooks and jsx-a11y rules) instead of ESLint. Prettier for formatting.
+pnpm 12 workspace. `cn()` uses `clsx` + `tailwind-merge`. The third-party `cn` package suggested by the
+shadcn CLI was rejected.
+
 ### 5.2 Editor state and React Flow
 
 ```
