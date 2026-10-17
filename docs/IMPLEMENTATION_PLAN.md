@@ -130,7 +130,7 @@ Testing Platform runner, and `dotnet test` only finds it from that folder.
   Events, Sweep chart), failure-injection menu on nodes and in the toolbar, active-failure chips,
   "How the simulator works" page generated from the registry.
 
-**Acceptance criteria** (status 2026-10-17: implemented; the UI criteria are covered by Playwright tests in guest mode.)
+**Acceptance criteria** (status 2026-10-17: complete. The UI criteria are covered by Playwright tests in guest mode and were also checked by hand.)
 - [x] Engine unit tests cover each role's behaviour, cache-aside with and without a cache failure, the shedding math, success propagation through fan-out, queue backlog growth, the stream fan-out vs. queue competing-consumer difference, each failure scenario, invalid-document handling, and determinism (same input gives a deep-equal output). *(86 tests, 99.7% statements; the prototype's 30 tests are the regression baseline.)*
 - [x] Golden tests: the URL Shortener stage topologies produce the expected statuses and success rates within tolerance. *(`packages/simulation/test/golden.test.ts`, ±0.5 percentage points.)*
 - [x] Simulating a 150-node document takes < 5 ms, and a 50-point sweep < 100 ms, measured with a Vitest benchmark. *(Measured locally: ~2 ms and ~12 ms. `pnpm --filter @sdl/simulation bench`; informational in CI because shared runners vary.)*
