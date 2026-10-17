@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    {
+      "id": "read",
+      "name": "Read",
+      "kind": "read",
+      "share": 9
+    },
+    {
+      "id": "write",
+      "name": "Write",
+      "kind": "write",
+      "share": 1
+    }
+  ],
+  "nodes": [],
+  "edges": [],
+  "layout": {}
+}

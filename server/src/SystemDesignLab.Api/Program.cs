@@ -1,3 +1,4 @@
+using SystemDesignLab.Api.Features.Architectures;
 using SystemDesignLab.Api.Features.Users;
 using SystemDesignLab.Api.Infrastructure.Auth;
 using SystemDesignLab.Api.Infrastructure.Persistence;
@@ -15,6 +16,7 @@ builder.Services.AddApiRateLimiting(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddOpenApi();
 builder.Services.AddUsersFeature();
+builder.Services.AddArchitecturesFeature();
 
 var app = builder.Build();
 
@@ -24,6 +26,7 @@ app.UseCors();
 app.UseAuthentication();
 app.UseRateLimiter(); // after authentication so limits partition by user
 app.UseAuthorization();
+app.UseRequestBodyLimits();
 
 if (app.Environment.IsDevelopment())
 {
@@ -40,6 +43,7 @@ var api = app.MapGroup("/api")
     .AddEndpointFilter<EnsureUserProfileFilter>();
 
 api.MapUsersEndpoints();
+api.MapArchitecturesEndpoints();
 
 app.Run();
 

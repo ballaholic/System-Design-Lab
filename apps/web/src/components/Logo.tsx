@@ -20,7 +20,10 @@ function LogoMark({ className }: { className?: string }) {
 
 export function Logo() {
   return (
-    <Link to="/" className="flex items-center gap-2 rounded-md font-semibold tracking-tight">
+    <Link
+      to="/"
+      className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-md font-semibold tracking-tight"
+    >
       <LogoMark className="size-5 text-primary" />
       <span>System Design Lab</span>
     </Link>

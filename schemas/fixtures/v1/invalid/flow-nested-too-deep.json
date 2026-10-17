@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    {
+      "id": "read",
+      "name": "Read",
+      "kind": "read",
+      "share": 1
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "api-server",
+      "label": "API",
+      "config": {},
+      "flows": {
+        "read": [
+          {
+            "type": "cache-lookup",
+            "edge": "e1",
+            "onMiss": [
+              {
+                "type": "cache-lookup",
+                "edge": "e1",
+                "onMiss": [
+                  {
+                    "type": "cache-lookup",
+                    "edge": "e1",
+                    "onMiss": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "edges": [],
+  "layout": {}
+}

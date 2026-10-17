@@ -11,7 +11,7 @@ public static class CorsSetup
             .WithOrigins(origins)
             .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
             .WithHeaders("Authorization", "Content-Type", "If-Match")
-            .WithExposedHeaders("ETag", "Retry-After")
+            .WithExposedHeaders("ETag", "Location", "Retry-After")
             .SetPreflightMaxAge(TimeSpan.FromHours(1))));
     }
 }

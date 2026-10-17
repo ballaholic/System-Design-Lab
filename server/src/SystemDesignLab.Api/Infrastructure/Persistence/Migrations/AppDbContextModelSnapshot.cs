@@ -23,6 +23,75 @@ namespace SystemDesignLab.Api.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("SystemDesignLab.Api.Features.Architectures.Architecture", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<string>("ChallengeSlug")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("challenge_slug");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Document")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("document");
+
+                    b.Property<Guid?>("ImportKey")
+                        .HasColumnType("uuid")
+                        .HasColumnName("import_key");
+
+                    b.Property<int>("NodeCount")
+                        .HasColumnType("integer")
+                        .HasColumnName("node_count");
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("owner_id");
+
+                    b.Property<int>("SchemaVersion")
+                        .HasColumnType("integer")
+                        .HasColumnName("schema_version");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer")
+                        .HasColumnName("version");
+
+                    b.HasKey("Id")
+                        .HasName("pk_architectures");
+
+                    b.HasIndex("OwnerId", "ImportKey")
+                        .IsUnique()
+                        .HasDatabaseName("ix_architectures_owner_id_import_key");
+
+                    b.HasIndex("OwnerId", "UpdatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_architectures_owner_id_updated_at");
+
+                    b.ToTable("architectures", "app");
+                });
+
             modelBuilder.Entity("SystemDesignLab.Api.Features.Users.UserProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -52,6 +121,16 @@ namespace SystemDesignLab.Api.Infrastructure.Persistence.Migrations
                         .HasName("pk_user_profiles");
 
                     b.ToTable("user_profiles", "app");
+                });
+
+            modelBuilder.Entity("SystemDesignLab.Api.Features.Architectures.Architecture", b =>
+                {
+                    b.HasOne("SystemDesignLab.Api.Features.Users.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_architectures_user_profiles_owner_id");
                 });
 #pragma warning restore 612, 618
         }

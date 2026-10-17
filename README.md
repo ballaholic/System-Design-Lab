@@ -3,18 +3,20 @@
 An interactive playground for learning system design: build architectures, simulate traffic and failures,
 and get feedback from an AI mentor.
 
-> Status: **Phase 1 (foundation)**: auth, app shell, API and database. See the
+> Status: **Phase 2 (playground)**: architecture editor, saved designs and guest mode. See the
 > [implementation plan](docs/IMPLEMENTATION_PLAN.md).
 
 ## Repository layout
 
-| Path              | What                                                                                                                            |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`        | React SPA (Vite, TypeScript, Tailwind CSS v4, shadcn/ui, React Router, TanStack Query)                                          |
-| `server/`         | ASP.NET Core API (.NET 10, EF Core, PostgreSQL), see [server/README.md](server/README.md)                                       |
-| `packages/config` | Shared TypeScript presets. Domain packages (`architecture`, `simulation`, `challenges`) are added in the phases that need them. |
-| `docs/`           | Product, architecture, data model, plan and decisions                                                                           |
-| `prototypes/`     | Phase 0 experiments, **not production code**                                                                                    |
+| Path                    | What                                                                                              |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| `apps/web`              | React SPA (Vite, TypeScript, Tailwind CSS v4, shadcn/ui, React Router, TanStack Query)            |
+| `server/`               | ASP.NET Core API (.NET 10, EF Core, PostgreSQL), see [server/README.md](server/README.md)         |
+| `packages/architecture` | `@sdl/architecture`: document schema, component catalog, connection rules, validation, migrations |
+| `packages/config`       | Shared TypeScript presets                                                                         |
+| `schemas/`              | Generated JSON Schema for the API, plus shared fixtures tested in TypeScript and .NET             |
+| `docs/`                 | Product, architecture, data model, plan and decisions                                             |
+| `prototypes/`           | Phase 0 experiments, **not production code**                                                      |
 
 ## Prerequisites
 
@@ -45,7 +47,7 @@ and get feedback from an AI mentor.
 4. **API secrets**: see [server/README.md](server/README.md#configuration). This covers the project URL and
    the database connection string, stored with `dotnet user-secrets`, never in files.
 
-5. **Create the database schema** (once, and after every new migration):
+5. **Create or update the database schema** (once, and after pulling a new migration):
 
    ```bash
    dotnet ef database update --project server/src/SystemDesignLab.Api
@@ -63,7 +65,11 @@ pnpm dev                                              # web on http://localhost:
 ```bash
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 dotnet test --solution server/SystemDesignLab.slnx
+pnpm --filter @sdl/web e2e   # Playwright, guest mode; add PW_CHANNEL=msedge (or chrome) to use an installed browser
 ```
+
+The JSON Schema in `schemas/` is generated: after changing the architecture schema, run
+`pnpm --filter @sdl/architecture schema` (a test fails if the committed file is stale).
 
 CI (`.github/workflows/ci.yml`) runs the same checks, plus the database tests against PostgreSQL via
 Testcontainers, on every pull request.

@@ -5,7 +5,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Generated from the TypeScript model (packages/architecture); one source of truth for both validators. -->
+    <EmbeddedResource Include="..\..\..\schemas\architecture.schema.json" LogicalName="architecture.schema.json" Link="architecture.schema.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="SystemDesignLab.Api.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
+    <PackageReference Include="JsonSchema.Net" Version="9.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.13" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.13">

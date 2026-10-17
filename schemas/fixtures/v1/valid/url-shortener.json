@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    {
+      "id": "redirect",
+      "name": "Follow short link",
+      "kind": "read",
+      "share": 10
+    },
+    {
+      "id": "create",
+      "name": "Create short link",
+      "kind": "write",
+      "share": 1
+    },
+    {
+      "id": "track-click",
+      "name": "Record click",
+      "kind": "write",
+      "share": 0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n_client",
+      "type": "web-client",
+      "label": "Browser",
+      "config": {
+        "share": 1
+      }
+    },
+    {
+      "id": "n_lb",
+      "type": "load-balancer",
+      "label": "Load balancer",
+      "config": {
+        "capacityRps": 50000
+      }
+    },
+    {
+      "id": "n_api",
+      "type": "api-server",
+      "label": "API server",
+      "config": {
+        "instances": 4,
+        "capacityPerInstanceRps": 1000
+      },
+      "flows": {
+        "redirect": [
+          {
+            "type": "cache-lookup",
+            "edge": "e_api_cache",
+            "populate": true,
+            "onMiss": [
+              {
+                "type": "call",
+                "edge": "e_api_db"
+              }
+            ]
+          },
+          {
+            "type": "publish",
+            "edge": "e_api_queue",
+            "message": "track-click",
+            "optional": true
+          }
+        ],
+        "create": [
+          {
+            "type": "call",
+            "edge": "e_api_db"
+          },
+          {
+            "type": "call",
+            "edge": "e_api_cache",
+            "as": "write",
+            "optional": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "n_cache",
+      "type": "redis-cache",
+      "label": "Redis",
+      "config": {
+        "hitRate": 0.8,
+        "capacityOps": 100000
+      }
+    },
+    {
+      "id": "n_db",
+      "type": "sql-database",
+      "label": "PostgreSQL",
+      "config": {
+        "readCapacity": 5000,
+        "writeCapacity": 2000
+      }
+    },
+    {
+      "id": "n_queue",
+      "type": "message-queue",
+      "label": "Click queue",
+      "config": {
+        "enqueueCapacity": 50000
+      }
+    },
+    {
+      "id": "n_worker",
+      "type": "background-worker",
+      "label": "Click worker",
+      "config": {
+        "instances": 2,
+        "throughputPerInstance": 200
+      },
+      "flows": {
+        "track-click": [
+          {
+            "type": "call",
+            "edge": "e_worker_db",
+            "as": "write"
+          }
+        ]
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e_client_lb",
+      "source": "n_client",
+      "target": "n_lb"
+    },
+    {
+      "id": "e_lb_api",
+      "source": "n_lb",
+      "target": "n_api"
+    },
+    {
+      "id": "e_api_cache",
+      "source": "n_api",
+      "target": "n_cache"
+    },
+    {
+      "id": "e_api_db",
+      "source": "n_api",
+      "target": "n_db"
+    },
+    {
+      "id": "e_api_queue",
+      "source": "n_api",
+      "target": "n_queue"
+    },
+    {
+      "id": "e_queue_worker",
+      "source": "n_queue",
+      "target": "n_worker"
+    },
+    {
+      "id": "e_worker_db",
+      "source": "n_worker",
+      "target": "n_db",
+      "label": "writes"
+    }
+  ],
+  "layout": {
+    "n_client": {
+      "x": 0,
+      "y": 120
+    },
+    "n_lb": {
+      "x": 220,
+      "y": 120
+    },
+    "n_api": {
+      "x": 440,
+      "y": 120
+    },
+    "n_cache": {
+      "x": 680,
+      "y": 0
+    },
+    "n_db": {
+      "x": 680,
+      "y": 140
+    },
+    "n_queue": {
+      "x": 680,
+      "y": 280
+    },
+    "n_worker": {
+      "x": 900,
+      "y": 280
+    }
+  },
+  "notes": "Short links are read about ten times as often as they are created.",
+  "traffic": {
+    "totalRps": 11000
+  }
+}
