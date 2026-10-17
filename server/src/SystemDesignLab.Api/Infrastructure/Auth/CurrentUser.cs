@@ -29,8 +29,8 @@ public sealed record CurrentUser(
         return new CurrentUser(
             Id: Guid.Parse(principal.FindFirst("sub")!.Value),
             Email: string.IsNullOrWhiteSpace(email) ? null : email,
-            // Supabase puts email_verified inside user_metadata, not at the top level. Not yet observed on a live
-            // token: confirm with GET /api/me against the hosted project (Phase 1 acceptance).
+            // Supabase puts email_verified inside user_metadata, not at the top level (confirmed on a live token
+            // from the hosted project after email confirmation).
             EmailVerified: meta is { } m && m.TryGetProperty("email_verified", out var v) && v.ValueKind is JsonValueKind.True or JsonValueKind.False
                 ? v.GetBoolean()
                 : null,

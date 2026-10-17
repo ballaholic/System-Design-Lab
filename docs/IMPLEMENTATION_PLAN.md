@@ -76,12 +76,12 @@ Testing Platform runner, and `dotnet test` only finds it from that folder.
   first migration (`user_profiles`), `GET/PATCH /api/me` with lazy provisioning.
 - Local dev docs: hosted Supabase dev project setup, `dotnet run`, `pnpm dev`, `.env.example`.
 
-**Acceptance criteria** (status 2026-10-17: implemented. The unchecked items need manual verification against the hosted Supabase project.)
-- [ ] A fresh clone plus the README steps runs the web app and API against the hosted Supabase dev project in under 15 minutes.
-- [ ] Register → verification email received (hosted dev project) → confirm → login → header shows display name from `GET /api/me`.
-- [ ] Google OAuth login works against the hosted dev project with a test OAuth client (redirect URL `http://localhost:<port>/auth/callback`).
-- [ ] The password-reset email link lands on the reset page, and the new password works.
-- [ ] Reload keeps the session. Logout clears it.
+**Acceptance criteria** (status 2026-10-17: implemented and manually verified against the hosted Supabase project. Google OAuth is deferred until a Google OAuth client is set up.)
+- [x] A fresh clone plus the README steps runs the web app and API against the hosted Supabase dev project in under 15 minutes.
+- [x] Register → verification email received (hosted dev project) → confirm → login → header shows display name from `GET /api/me`.
+- [ ] Google OAuth login works against the hosted dev project with a test OAuth client (redirect URL `http://localhost:<port>/auth/callback`). *(Deferred: needs a Google OAuth client.)*
+- [x] The password-reset email link lands on the reset page, and the new password works.
+- [x] Reload keeps the session. Logout clears it.
 - [x] `GET /api/me` without a token → 401 ProblemDetails. With a token from another Supabase project → 401. *(PlatformTests)*
 - [x] Integration test: first `/api/me` call creates the profile, and a second call doesn't duplicate it. Concurrent first calls create exactly one row. *(UsersEndpointsTests on Testcontainers PostgreSQL in CI)*
 - [x] CI is green, and lint, typecheck, and tests run on every PR. *(PR #2: web and API jobs, including database tests)*
