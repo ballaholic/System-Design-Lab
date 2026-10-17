@@ -7,3 +7,5 @@ docs/
 apps/web/src/components/ui/
 **/components.json
 schemas/architecture.schema.json
+**/test-results/
+**/playwright-report/
