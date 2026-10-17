@@ -184,6 +184,9 @@ importers:
       '@sdl/architecture':
         specifier: workspace:*
         version: link:../../packages/architecture
+      '@sdl/challenges':
+        specifier: workspace:*
+        version: link:../../packages/challenges
       '@sdl/simulation':
         specifier: workspace:*
         version: link:../../packages/simulation

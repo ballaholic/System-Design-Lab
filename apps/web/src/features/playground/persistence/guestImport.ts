@@ -1,9 +1,16 @@
 import { checkDocumentForSave, loadArchitecture } from "@sdl/architecture";
-import { architecturesApi, type ImportDesign } from "@/lib/api/architectures";
+import {
+  attemptImportKey,
+  listGuestAttempts,
+  rememberImportedAttempts,
+  removeGuestAttempts,
+} from "@/features/challenges/attempts/guestAttempts";
+import { architecturesApi, type ImportAttempt, type ImportDesign } from "@/lib/api/architectures";
 import {
   deleteGuestDesign,
   getGuestDesign,
   importKeyOf,
+  isGuestId,
   listGuestDesigns,
   rememberImported,
 } from "./guestDesigns";
@@ -14,6 +21,8 @@ export interface GuestImportResult {
   imported: number;
   /** Local designs that couldn't be read or are invalid; they stay in this browser. */
   skipped: number;
+  /** Challenge attempts moved with them. */
+  attempts: number;
 }
 
 let running: Promise<GuestImportResult | null> | null = null;
@@ -32,7 +41,28 @@ export function importGuestDesigns(): Promise<GuestImportResult | null> {
 
 async function run(): Promise<GuestImportResult | null> {
   const summaries = listGuestDesigns();
-  if (summaries.length === 0) return null;
+  // Abandoned attempts aren't worth keeping; the server takes up to 10 per request.
+  const guestAttempts = listGuestAttempts()
+    .filter((a) => a.status !== "abandoned")
+    .slice(0, BATCH);
+  if (summaries.length === 0 && guestAttempts.length === 0) return null;
+  const attempts: ImportAttempt[] = guestAttempts.map((a) => ({
+    importKey: attemptImportKey(a.id),
+    challengeSlug: a.challengeSlug,
+    challengeVersion: a.challengeVersion,
+    mode: a.mode,
+    status: a.status,
+    currentStageId: a.currentStageId,
+    ...(a.architectureId && isGuestId(a.architectureId)
+      ? { architectureImportKey: importKeyOf(a.architectureId) }
+      : {}),
+    stageResults: a.stageResults,
+    exerciseAnswers: a.exerciseAnswers,
+    hintsRevealed: a.hintsRevealed,
+    startedAt: a.startedAt,
+    lastActivityAt: a.lastActivityAt,
+    completedAt: a.completedAt,
+  }));
 
   const ready: Array<{ guestId: string; design: ImportDesign }> = [];
   let skipped = 0;
@@ -45,14 +75,36 @@ async function run(): Promise<GuestImportResult | null> {
     }
     ready.push({
       guestId: summary.id,
-      design: { importKey: importKeyOf(summary.id), title: summary.title, document: loaded.document },
+      design: {
+        importKey: importKeyOf(summary.id),
+        title: summary.title,
+        document: loaded.document,
+        ...(summary.challengeSlug ? { challengeSlug: summary.challengeSlug } : {}),
+      },
     });
   }
 
   let imported = 0;
-  for (let i = 0; i < ready.length; i += BATCH) {
-    const batch = ready.slice(i, i + BATCH);
-    const { results } = await architecturesApi.import(batch.map((b) => b.design));
+  let importedAttempts = 0;
+  const batches = Math.max(1, Math.ceil(ready.length / BATCH));
+  for (let n = 0; n < batches; n++) {
+    const batch = ready.slice(n * BATCH, (n + 1) * BATCH);
+    // Attempts go with the last batch, so every design they link to has been imported by then.
+    const last = n === batches - 1;
+    if (batch.length === 0 && !(last && attempts.length > 0)) continue;
+    const { results, attemptResults = [] } = await architecturesApi.import(
+      batch.map((b) => b.design),
+      last ? attempts : [],
+    );
+    if (last && attempts.length > 0) {
+      const byKey = new Map(attemptResults.map((r) => [r.importKey, r.id]));
+      const done = guestAttempts.filter((a) => byKey.has(attemptImportKey(a.id)));
+      rememberImportedAttempts(
+        Object.fromEntries(done.map((a) => [a.id, byKey.get(attemptImportKey(a.id))!])),
+      );
+      removeGuestAttempts(done.map((a) => a.id));
+      importedAttempts = done.length;
+    }
     const byKey = new Map(results.map((r) => [r.importKey, r.id]));
     const mapping: Record<string, string> = {};
     for (const { guestId, design } of batch) {
@@ -64,5 +116,5 @@ async function run(): Promise<GuestImportResult | null> {
     }
     rememberImported(mapping);
   }
-  return { imported, skipped };
+  return { imported, skipped, attempts: importedAttempts };
 }

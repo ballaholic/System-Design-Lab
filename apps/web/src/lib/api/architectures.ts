@@ -28,10 +28,30 @@ export interface ImportDesign {
   title: string;
   description?: string | null;
   document: unknown;
+  challengeSlug?: string | null;
+}
+
+/** A guest challenge attempt, imported with its design (AUTH-9). */
+export interface ImportAttempt {
+  importKey: string;
+  challengeSlug: string;
+  challengeVersion: number;
+  mode: "guided";
+  status: "in_progress" | "completed" | "abandoned";
+  currentStageId: string;
+  /** The import key of the attempt's design, from this or an earlier import. */
+  architectureImportKey?: string;
+  stageResults: unknown;
+  exerciseAnswers: unknown;
+  hintsRevealed: string[];
+  startedAt: string;
+  lastActivityAt: string;
+  completedAt?: string | null;
 }
 
 export interface ImportResult {
   results: Array<{ importKey: string; id: string; created: boolean }>;
+  attemptResults?: Array<{ importKey: string; id: string; created: boolean }>;
 }
 
 export const architecturesKey = (userId: string | undefined) => ["architectures", userId] as const;
@@ -40,8 +60,12 @@ export const architecturesApi = {
   list: (cursor?: string) =>
     apiFetch<ArchitecturePage>(`/api/architectures${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ""}`),
   get: (id: string) => apiFetch<Architecture>(`/api/architectures/${id}`),
-  create: (input: { title: string; description?: string | null; document: unknown }) =>
-    apiFetch<Architecture>("/api/architectures", { method: "POST", body: JSON.stringify(input) }),
+  create: (input: {
+    title: string;
+    description?: string | null;
+    document: unknown;
+    challengeSlug?: string;
+  }) => apiFetch<Architecture>("/api/architectures", { method: "POST", body: JSON.stringify(input) }),
   /** Optimistic concurrency (ADR-018): a stale version fails with 412. */
   save: (id: string, document: unknown, version: number) =>
     apiFetch<Architecture>(`/api/architectures/${id}`, {
@@ -53,10 +77,10 @@ export const architecturesApi = {
     apiFetch<Architecture>(`/api/architectures/${id}`, { method: "PATCH", body: JSON.stringify(input) }),
   remove: (id: string) => apiFetch<void>(`/api/architectures/${id}`, { method: "DELETE" }),
   duplicate: (id: string) => apiFetch<Architecture>(`/api/architectures/${id}/duplicate`, { method: "POST" }),
-  import: (designs: ImportDesign[]) =>
+  import: (designs: ImportDesign[], attempts: ImportAttempt[] = []) =>
     apiFetch<ImportResult>("/api/architectures/import", {
       method: "POST",
-      body: JSON.stringify({ designs }),
+      body: JSON.stringify(attempts.length > 0 ? { designs, attempts } : { designs }),
     }),
 };
 
@@ -115,3 +139,21 @@ export function useDuplicateArchitecture() {
   const invalidate = useInvalidateList();
   return useMutation({ mutationFn: architecturesApi.duplicate, onSuccess: () => void invalidate() });
 }
+
+export interface SnapshotSummary {
+  id: string;
+  label: string;
+  createdAt: string;
+  nodeCount: number;
+}
+
+export const snapshotsApi = {
+  list: (architectureId: string) =>
+    apiFetch<{ items: SnapshotSummary[] }>(`/api/architectures/${architectureId}/snapshots`),
+  /** Without a document, the server snapshots what it has stored. */
+  create: (architectureId: string, label: string, document?: unknown) =>
+    apiFetch<SnapshotSummary>(`/api/architectures/${architectureId}/snapshots`, {
+      method: "POST",
+      body: JSON.stringify(document === undefined ? { label } : { label, document }),
+    }),
+};

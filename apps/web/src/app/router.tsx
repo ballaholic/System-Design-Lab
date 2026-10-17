@@ -30,6 +30,27 @@ export const router = createBrowserRouter([
             }),
           },
           { path: "designs", element: <DesignsPage /> },
+          // Challenge content and the evaluator load only on challenge pages.
+          {
+            path: "challenges",
+            lazy: async () => ({
+              Component: (await import("@/features/challenges/ChallengesPage")).ChallengesPage,
+            }),
+          },
+          {
+            path: "challenges/:slug",
+            lazy: async () => ({
+              Component: (await import("@/features/challenges/ChallengeDetailPage")).ChallengeDetailPage,
+            }),
+          },
+          {
+            path: "challenges/:slug/attempt/:attemptId",
+            handle: { fullBleed: true },
+            lazy: async () => ({
+              Component: (await import("@/features/challenges/ChallengeWorkspacePage"))
+                .ChallengeWorkspacePage,
+            }),
+          },
           {
             path: "docs/simulator",
             lazy: async () => ({

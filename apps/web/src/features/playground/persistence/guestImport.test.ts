@@ -9,6 +9,14 @@ import {
   saveGuestDesign,
 } from "./guestDesigns";
 import { importGuestDesigns } from "./guestImport";
+import { CHALLENGES } from "@/features/challenges/content";
+import {
+  attemptImportKey,
+  createGuestAttempt,
+  getGuestAttempt,
+  importedAttemptId,
+  listGuestAttempts,
+} from "@/features/challenges/attempts/guestAttempts";
 
 beforeEach(() => {
   localStorage.clear();
@@ -17,8 +25,13 @@ beforeEach(() => {
 });
 
 function mockImport() {
-  return vi.spyOn(architecturesApi, "import").mockImplementation(async (designs) => ({
+  return vi.spyOn(architecturesApi, "import").mockImplementation(async (designs, attempts = []) => ({
     results: designs.map((d) => ({ importKey: d.importKey, id: `server-${d.importKey}`, created: true })),
+    attemptResults: attempts.map((a) => ({
+      importKey: a.importKey,
+      id: `attempt-${a.importKey}`,
+      created: true,
+    })),
   }));
 }
 
@@ -34,10 +47,11 @@ describe("importGuestDesigns", () => {
     const id = newGuestId();
     saveGuestDesign(id, "My design", createEmptyDocument());
 
-    await expect(importGuestDesigns()).resolves.toEqual({ imported: 1, skipped: 0 });
-    expect(spy).toHaveBeenCalledWith([
-      { importKey: importKeyOf(id), title: "My design", document: createEmptyDocument() },
-    ]);
+    await expect(importGuestDesigns()).resolves.toEqual({ imported: 1, skipped: 0, attempts: 0 });
+    expect(spy).toHaveBeenCalledWith(
+      [{ importKey: importKeyOf(id), title: "My design", document: createEmptyDocument() }],
+      [],
+    );
     expect(listGuestDesigns()).toEqual([]);
     expect(importedServerId(id)).toBe(`server-${importKeyOf(id)}`);
   });
@@ -67,9 +81,41 @@ describe("importGuestDesigns", () => {
     const good = newGuestId();
     saveGuestDesign(good, "Fine", createEmptyDocument());
 
-    await expect(importGuestDesigns()).resolves.toEqual({ imported: 1, skipped: 1 });
+    await expect(importGuestDesigns()).resolves.toEqual({ imported: 1, skipped: 1, attempts: 0 });
     expect(getGuestDesign(bad)).not.toBeNull();
     expect(getGuestDesign(good)).toBeNull();
+  });
+
+  it("moves challenge attempts with their designs, linked by the design's import key", async () => {
+    const spy = mockImport();
+    const challenge = CHALLENGES[0]!;
+    const designId = newGuestId();
+    saveGuestDesign(designId, challenge.title, createEmptyDocument(), challenge.slug);
+    const attempt = createGuestAttempt(challenge, designId);
+    const abandoned = createGuestAttempt(challenge, designId); // abandons the first one
+    expect(getGuestAttempt(attempt.id)!.status).toBe("abandoned");
+
+    await expect(importGuestDesigns()).resolves.toEqual({ imported: 1, skipped: 0, attempts: 1 });
+    const [designs, attempts] = spy.mock.calls[0]!;
+    expect(designs[0]).toMatchObject({ importKey: importKeyOf(designId), challengeSlug: challenge.slug });
+    expect(attempts).toEqual([
+      expect.objectContaining({
+        importKey: attemptImportKey(abandoned.id),
+        challengeSlug: challenge.slug,
+        status: "in_progress",
+        architectureImportKey: importKeyOf(designId),
+      }),
+    ]);
+    expect(importedAttemptId(abandoned.id)).toBe(`attempt-${attemptImportKey(abandoned.id)}`);
+    // Imported attempts leave the browser; the abandoned one isn't worth importing and stays.
+    expect(listGuestAttempts().map((a) => a.id)).toEqual([attempt.id]);
+  });
+
+  it("imports attempts even when their design is gone", async () => {
+    const spy = mockImport();
+    createGuestAttempt(CHALLENGES[0]!, newGuestId());
+    await expect(importGuestDesigns()).resolves.toMatchObject({ imported: 0, attempts: 1 });
+    expect(spy.mock.calls[0]![0]).toEqual([]);
   });
 
   it("keeps designs when the server fails, so a retry can import them", async () => {

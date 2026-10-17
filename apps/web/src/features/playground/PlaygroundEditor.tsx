@@ -1,6 +1,6 @@
 import { flowUsages, type NodeId } from "@sdl/architecture";
 import { useReactFlow } from "@xyflow/react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -32,15 +32,21 @@ import { issueCounts } from "./validation/issueCounts";
 const wide = () =>
   typeof window === "undefined" || window.matchMedia?.("(min-width: 1024px)").matches !== false;
 
-export function PlaygroundEditor({ persistence }: { persistence: Persistence }) {
+interface EditorProps {
+  persistence: Persistence;
+  /** Challenge workspace: the requirements, exercises and criteria, shown as the first inspector tab. */
+  challengePanel?: ReactNode;
+}
+
+export function PlaygroundEditor(props: EditorProps) {
   return (
     <SimulationProvider>
-      <EditorLayout persistence={persistence} />
+      <EditorLayout {...props} />
     </SimulationProvider>
   );
 }
 
-function EditorLayout({ persistence }: { persistence: Persistence }) {
+function EditorLayout({ persistence, challengePanel }: EditorProps) {
   const store = useEditorStore();
   const simulation = useSimulation();
   const issues = useEditor((s) => s.issues);
@@ -49,7 +55,7 @@ function EditorLayout({ persistence }: { persistence: Persistence }) {
   const [view, setView] = useState<PlaygroundView>("diagram");
   const [libraryOpen, setLibraryOpen] = useState(wide);
   const [inspectorOpen, setInspectorOpen] = useState(wide);
-  const [panel, setPanel] = useState("inspect");
+  const [panel, setPanel] = useState(challengePanel ? "challenge" : "inspect");
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
   const { errors, warnings } = issueCounts(issues);
 
@@ -147,10 +153,16 @@ function EditorLayout({ persistence }: { persistence: Persistence }) {
           {inspectorOpen && (
             <aside
               aria-label="Inspector"
-              className="absolute inset-y-0 right-0 z-10 flex w-80 flex-col border-l bg-background lg:static lg:z-auto lg:shrink-0"
+              className={cn(
+                "absolute inset-y-0 right-0 z-10 flex w-80 flex-col border-l bg-background lg:static lg:z-auto lg:shrink-0",
+                challengePanel && "w-[min(24rem,100%)]",
+              )}
             >
               <Tabs value={panel} onValueChange={setPanel} className="flex min-h-0 flex-1 flex-col gap-0">
-                <TabsList className="mx-3 mt-2 grid w-auto grid-cols-2">
+                <TabsList
+                  className={cn("mx-3 mt-2 grid w-auto", challengePanel ? "grid-cols-3" : "grid-cols-2")}
+                >
+                  {challengePanel && <TabsTrigger value="challenge">Challenge</TabsTrigger>}
                   <TabsTrigger value="inspect">Inspect</TabsTrigger>
                   <TabsTrigger value="issues">
                     Issues
@@ -170,6 +182,11 @@ function EditorLayout({ persistence }: { persistence: Persistence }) {
                     )}
                   </TabsTrigger>
                 </TabsList>
+                {challengePanel && (
+                  <TabsContent value="challenge" className="min-h-0 flex-1 overflow-y-auto">
+                    {challengePanel}
+                  </TabsContent>
+                )}
                 <TabsContent value="inspect" className="min-h-0 flex-1 overflow-y-auto">
                   <Inspector />
                 </TabsContent>

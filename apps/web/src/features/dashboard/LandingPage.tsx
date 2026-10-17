@@ -38,9 +38,12 @@ export function LandingPage() {
         </p>
         <div className="flex flex-wrap gap-2">
           <Button asChild>
-            <Link to="/playground">Try the playground</Link>
+            <Link to="/challenges/url-shortener">Start the URL Shortener challenge</Link>
           </Button>
           <Button variant="outline" asChild>
+            <Link to="/playground">Try the playground</Link>
+          </Button>
+          <Button variant="ghost" asChild>
             <Link to="/register">Create a free account</Link>
           </Button>
         </div>
