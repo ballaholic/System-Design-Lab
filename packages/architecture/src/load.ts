@@ -2,7 +2,15 @@ import type { z } from "zod";
 import { CATALOG, type ComponentConfig, type ComponentType, isComponentType } from "./catalog";
 import { documentByteSize, LIMITS } from "./limits";
 import { type Migration, MIGRATIONS, migrateDocument } from "./migrations";
-import { type ArchitectureDocument, ArchitectureDocumentSchema } from "./schema";
+import {
+  type ArchitectureDocument,
+  ArchitectureDocumentSchema,
+  EDGE_SIDES,
+  type EdgeSide,
+  type EdgeSides,
+  SOURCE_SIDES,
+  type SourceSide,
+} from "./schema";
 
 export type LoadResult =
   | {
@@ -46,8 +54,7 @@ export function loadArchitecture(raw: unknown, migrations: readonly Migration[] 
         repairs.push("Removed connections to components that no longer exist.");
       doc.edges = edges;
       if (doc.edgeLayout && typeof doc.edgeLayout === "object") {
-        const edgeIds = new Set(edges.map((e) => e.id));
-        doc.edgeLayout = Object.fromEntries(Object.entries(doc.edgeLayout).filter(([id]) => edgeIds.has(id)));
+        doc.edgeLayout = keptEdgeSides(doc.edgeLayout, new Set(edges.map((e) => e.id)));
       }
     }
     if (doc.layout && typeof doc.layout === "object") {
@@ -60,6 +67,23 @@ export function loadArchitecture(raw: unknown, migrations: readonly Migration[] 
     return { ok: false, error: `The design couldn't be read: ${describeIssue(parsed.error)}` };
   }
   return { ok: true, document: parsed.data as ArchitectureDocument, repairs };
+}
+
+/**
+ * Connection sides are presentation only, so anything unusable (an unknown side, a connection leaving from the
+ * left, an entry for a removed connection) is dropped quietly and the line falls back to the default side.
+ */
+function keptEdgeSides(raw: object, edgeIds: Set<unknown>): Record<string, EdgeSides> {
+  const kept: Record<string, EdgeSides> = {};
+  for (const [id, value] of Object.entries(raw)) {
+    if (!edgeIds.has(id) || !value || typeof value !== "object") continue;
+    const { source, target } = value as Record<string, unknown>;
+    const sides: EdgeSides = {};
+    if ((SOURCE_SIDES as readonly unknown[]).includes(source)) sides.source = source as SourceSide;
+    if ((EDGE_SIDES as readonly unknown[]).includes(target)) sides.target = target as EdgeSide;
+    if (Object.keys(sides).length > 0) kept[id] = sides;
+  }
+  return kept;
 }
 
 /** Strict schema check for a document about to be saved, including the size limit. */

@@ -3,6 +3,7 @@ import {
   addEdge,
   addNode,
   ArchitectureDocumentSchema,
+  checkEdgeSides,
   createEmptyDocument,
   createId,
   createNode,
@@ -98,6 +99,19 @@ describe("connection sides", () => {
     const { doc: half } = addEdge(twoBoxes(), "api", "db", "e1", { source: "right", target: "top" });
     expect(half.edgeLayout).toEqual({ e1: { target: "top" } });
     expect(withEdgeSides(half, "e1", { source: "right", target: "left" })).not.toHaveProperty("edgeLayout");
+  });
+
+  it("can end on any side but never leave from the left, where connections come in", () => {
+    expect(checkEdgeSides({ source: "top", target: "right" })).toEqual({ ok: true });
+    expect(checkEdgeSides({ target: "left" })).toEqual({ ok: true });
+    expect(checkEdgeSides({ source: "left" })).toEqual({
+      ok: false,
+      reason: expect.stringContaining("can't leave from the left side"),
+    });
+    const leaving = { ...twoBoxes(), edges: [{ id: "e1", source: "api", target: "db" }] };
+    expect(
+      ArchitectureDocumentSchema.safeParse({ ...leaving, edgeLayout: { e1: { source: "left" } } }).success,
+    ).toBe(false);
   });
 
   it("are removed with their connection and copied with duplicates", () => {

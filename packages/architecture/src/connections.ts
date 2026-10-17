@@ -1,5 +1,5 @@
 import { CATALOG, type ComponentRole, type ComponentType, roleOf } from "./catalog";
-import type { ArchitectureDocument, NodeId } from "./schema";
+import type { ArchitectureDocument, EdgeSide, NodeId } from "./schema";
 
 /** Which target roles each source role may connect to (ARCHITECTURE §6.4, PG-2). */
 export const ALLOWED_TARGET_ROLES: Record<ComponentRole, readonly ComponentRole[]> = {
@@ -22,6 +22,21 @@ export function checkConnectionTypes(source: ComponentType, target: ComponentTyp
   const t = roleOf(target);
   if (ALLOWED_TARGET_ROLES[s].includes(t)) return { ok: true };
   return { ok: false, reason: refusalReason(source, target) };
+}
+
+/** Checks the sides a connection is drawn between: any side except leaving from the left, where lines come in. */
+export function checkEdgeSides(sides: {
+  source?: EdgeSide | undefined;
+  target?: EdgeSide | undefined;
+}): ConnectionCheck {
+  if (sides.source === "left") {
+    return {
+      ok: false,
+      reason:
+        "A connection can't leave from the left side of a box: that's where connections come in. Start it from the top, right or bottom.",
+    };
+  }
+  return { ok: true };
 }
 
 /** Full check for drawing a connection in a document: types, self-loops and duplicates. */

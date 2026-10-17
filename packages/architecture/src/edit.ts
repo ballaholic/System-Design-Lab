@@ -69,7 +69,10 @@ export function edgeSides(doc: ArchitectureDocument, id: EdgeId): Required<EdgeS
   return { ...DEFAULT_EDGE_SIDES, ...doc.edgeLayout?.[id] };
 }
 
-/** Records the sides of a connection, storing only the ones that differ from the default. */
+/**
+ * Records the sides of a connection, storing only the ones that differ from the default. Callers check the sides
+ * with checkEdgeSides first.
+ */
 export function withEdgeSides(doc: ArchitectureDocument, id: EdgeId, sides: EdgeSides): ArchitectureDocument {
   const stored: EdgeSides = {};
   if (sides.source && sides.source !== DEFAULT_EDGE_SIDES.source) stored.source = sides.source;

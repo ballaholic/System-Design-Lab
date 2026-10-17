@@ -1136,8 +1136,7 @@
             "enum": [
               "top",
               "right",
-              "bottom",
-              "left"
+              "bottom"
             ]
           },
           "target": {
