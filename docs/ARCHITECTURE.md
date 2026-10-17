@@ -195,6 +195,14 @@ React Flow ─────────────► editor store ────�
 - The API validates documents with JsonSchema.Net 9.4 against the generated schema, embedded at build time, with per-endpoint request body limits.
 - A small Playwright suite (guest mode, `apps/web/e2e`) runs in CI ahead of Phase 6, because jsdom can't exercise dragging and connecting on the canvas.
 
+*As built in Phase 4 (2026-10):*
+
+- Challenge content is bundled into the web app (Vite `import.meta.glob` over `content/challenges`) and also loaded, validated and served by the API at startup (ADR-008). Bundling lets guests play offline and keeps the workspace free of loading states; both read the same files.
+- The challenge workspace is the playground with a **Challenge** tab in the inspector. Entering a stage switches the sandbox simulation to the stage's traffic and failures, and a stage with a failure opens the simulation panel. Criteria always use the stage settings, whatever the sandbox shows.
+- Passing a stage records the criteria results as evidence (ADR-010) and, for signed-in users, saves a snapshot of the current document ("Stage N passed: …"). Guests are told that checkpoints need an account.
+- Guest attempts are stored like guest designs (`local-attempt-<uuid>`). The import sends them with the last batch of designs, linked by the design's import key.
+- Step suggestions for a service include every operation clients send, so accepting one doesn't hide the next.
+
 ### 5.3 Persistence and guest mode
 
 - **Guest:** designs (up to 10) and guest challenge progress autosave to `localStorage` through a
