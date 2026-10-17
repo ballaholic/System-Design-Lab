@@ -7,5 +7,6 @@ docs/
 apps/web/src/components/ui/
 **/components.json
 schemas/architecture.schema.json
+schemas/challenge.schema.json
 **/test-results/
 **/playwright-report/

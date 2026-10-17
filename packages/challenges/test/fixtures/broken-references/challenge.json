@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "slug": "broken-references",
+  "version": 1,
+  "title": "Broken",
+  "summary": "A challenge with mistakes the content check must catch.",
+  "difficulty": "beginner",
+  "topics": ["testing"],
+  "order": 99,
+  "objectives": ["Fail the content check."],
+  "functionalRequirements": ["None."],
+  "nonFunctionalRequirements": [],
+  "constraints": [],
+  "starterArchitecture": "starter.json",
+  "stages": [
+    {
+      "id": "only",
+      "title": "One",
+      "brief": "missing.md",
+      "traffic": { "totalRps": 10 },
+      "hints": [],
+      "criteria": [
+        { "kind": "exercise-completed", "id": "a", "description": "Unknown exercise.", "exerciseId": "nope" },
+        { "kind": "has-flow", "id": "b", "description": "Unknown operation.", "operation": "ghost" }
+      ]
+    },
+    {
+      "id": "only",
+      "title": "Two",
+      "brief": "brief.md",
+      "traffic": { "totalRps": 10 },
+      "hints": [],
+      "criteria": [{ "kind": "has-component", "id": "c", "description": "Anything.", "type": "web-client" }]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@sdl/challenges",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Challenge definition schema, content validation and criteria evaluator",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "schema": "vitest run --config vitest.schema.config.ts"
+  },
+  "dependencies": {
+    "@sdl/architecture": "workspace:*",
+    "@sdl/simulation": "workspace:*",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@sdl/config": "workspace:*",
+    "@types/node": "^24.13.3",
+    "@vitest/coverage-v8": "^5.0.5",
+    "oxlint": "^1.81.0",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.5"
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    { "id": "redirect", "name": "Follow short link", "kind": "read", "share": 10 },
+    { "id": "create", "name": "Create short link", "kind": "write", "share": 1 }
+  ],
+  "nodes": [
+    { "id": "users", "type": "web-client", "label": "Users", "config": { "share": 1 } },
+    { "id": "lb", "type": "load-balancer", "label": "Load balancer", "config": { "capacityRps": 50000 } },
+    {
+      "id": "api",
+      "type": "api-server",
+      "label": "API server",
+      "config": { "instances": 16, "capacityPerInstanceRps": 1000 },
+      "flows": {
+        "redirect": [
+          {
+            "type": "cache-lookup",
+            "edge": "api-cache",
+            "populate": true,
+            "onMiss": [{ "type": "call", "edge": "api-db" }]
+          }
+        ],
+        "create": [
+          { "type": "call", "edge": "api-db" },
+          { "type": "call", "edge": "api-cache", "as": "write", "optional": true }
+        ]
+      }
+    },
+    {
+      "id": "cache",
+      "type": "redis-cache",
+      "label": "Cache",
+      "config": { "hitRate": 0.8, "capacityOps": 100000 }
+    },
+    {
+      "id": "db",
+      "type": "sql-database",
+      "label": "SQL database",
+      "config": { "readCapacity": 5000, "writeCapacity": 2000 }
+    }
+  ],
+  "edges": [
+    { "id": "users-lb", "source": "users", "target": "lb" },
+    { "id": "lb-api", "source": "lb", "target": "api" },
+    { "id": "api-cache", "source": "api", "target": "cache" },
+    { "id": "api-db", "source": "api", "target": "db" }
+  ],
+  "layout": {
+    "users": { "x": 0, "y": 150 },
+    "lb": { "x": 260, "y": 150 },
+    "api": { "x": 520, "y": 150 },
+    "cache": { "x": 800, "y": 40 },
+    "db": { "x": 800, "y": 260 }
+  }
+}
