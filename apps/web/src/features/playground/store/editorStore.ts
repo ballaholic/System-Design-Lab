@@ -62,6 +62,8 @@ export interface EditorState {
   scenario: FailureScenario;
   /** The connection made most recently in this session, so the canvas can acknowledge it. Not history. */
   lastConnection: { edgeId: EdgeId; source: NodeId; target: NodeId; at: number } | null;
+  /** Components to point out on the canvas, e.g. those an AI review finding is about. Not history. */
+  highlight: NodeId[];
 
   /** Replaces the document and clears history (loading a design). */
   load(doc: ArchitectureDocument): void;
@@ -153,10 +155,12 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
       lastCommit: null,
       scenario: NO_FAILURES,
       lastConnection: null,
+      highlight: [],
 
       load: (doc) =>
         set({
           doc,
+          highlight: [],
           past: [],
           future: [],
           selection: EMPTY_SELECTION,

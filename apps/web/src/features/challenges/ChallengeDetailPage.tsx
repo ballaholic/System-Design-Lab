@@ -1,4 +1,4 @@
-import { ArrowLeft, CircleAlert, Lock, Play, RotateCcw } from "lucide-react";
+import { ArrowLeft, CircleAlert, Lock, MessagesSquare, Play, RotateCcw } from "lucide-react";
 import { type ReactNode, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { toast } from "sonner";
@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Attempt } from "@/lib/api/attempts";
 import { errorMessage } from "@/lib/api/client";
+import { useMentorQuota } from "@/lib/api/mentor";
+import { useAuth } from "@/features/auth/authContext";
 import { attemptPath, currentAttempt, stageNumber, useAttempts, useStartAttempt } from "./attempts/attempts";
 import { ChallengeStatus } from "./ChallengeStatus";
 import { DIFFICULTY_LABEL, findChallenge, topicLabel } from "./content";
@@ -28,7 +30,11 @@ export function ChallengeDetailPage() {
   const { attempts, isPending } = useAttempts();
   const start = useStartAttempt();
   const [busy, setBusy] = useState(false);
-  const [confirmRestart, setConfirmRestart] = useState<Attempt | null>(null);
+  const [confirmRestart, setConfirmRestart] = useState<{ attempt: Attempt; mode: Attempt["mode"] } | null>(
+    null,
+  );
+  const { status } = useAuth();
+  const mentor = useMentorQuota();
 
   if (!challenge) {
     return (
@@ -47,12 +53,24 @@ export function ChallengeDetailPage() {
   const attempt = currentAttempt(attempts, challenge.slug);
   const inProgress = attempt?.status === "in_progress" ? attempt : undefined;
 
-  const begin = async (restart: boolean) => {
+  // Interview mode is the AI interviewer, so it needs a verified account and the mentor switched on (PRD CH-8).
+  const interviewBlocked =
+    status !== "authenticated"
+      ? "Interview mode needs an account with a verified email."
+      : !mentor.data
+        ? "Checking whether the AI mentor is available…"
+        : !mentor.data.emailVerified
+          ? "Verify your email to use Interview mode."
+          : !mentor.data.available
+            ? "The AI mentor is turned off right now, so Interview mode is unavailable."
+            : null;
+
+  const begin = async (restart: boolean, mode: Attempt["mode"] = "guided") => {
     setBusy(true);
     try {
-      const result = await start(challenge, restart);
+      const result = await start(challenge, restart, mode);
       if (result.ok) navigate(attemptPath(challenge.slug, result.attempt.id));
-      else if (result.inProgress) setConfirmRestart(result.inProgress);
+      else if (result.inProgress) setConfirmRestart({ attempt: result.inProgress, mode });
       else toast.error("An attempt is already in progress. Reload the page and try again.");
     } catch (e) {
       toast.error("Couldn't start the challenge", { description: errorMessage(e) });
@@ -90,7 +108,11 @@ export function ChallengeDetailPage() {
                   <Play className="size-4" /> Continue stage {stageNumber(challenge, inProgress)}
                 </Link>
               </Button>
-              <Button variant="outline" disabled={busy} onClick={() => setConfirmRestart(inProgress)}>
+              <Button
+                variant="outline"
+                disabled={busy}
+                onClick={() => setConfirmRestart({ attempt: inProgress, mode: "guided" })}
+              >
                 <RotateCcw className="size-4" /> Start over
               </Button>
             </>
@@ -100,13 +122,26 @@ export function ChallengeDetailPage() {
               {attempt?.status === "completed" ? "Play again" : "Start in Guided mode"}
             </Button>
           )}
-          <Button variant="outline" disabled aria-describedby="interview-note">
-            <Lock className="size-4" /> Interview mode
+          <Button
+            variant="outline"
+            disabled={busy || isPending || interviewBlocked !== null}
+            aria-describedby="interview-note"
+            onClick={() =>
+              inProgress
+                ? setConfirmRestart({ attempt: inProgress, mode: "interview" })
+                : void begin(false, "interview")
+            }
+          >
+            {interviewBlocked ? <Lock className="size-4" /> : <MessagesSquare className="size-4" />} Interview
+            mode
           </Button>
         </div>
         <p className="text-xs text-muted-foreground">
           Guided mode shows hints when you ask for them and checks each stage as you build.{" "}
-          <span id="interview-note">Interview mode arrives with the AI mentor.</span>
+          <span id="interview-note">
+            {interviewBlocked ??
+              "In Interview mode an AI interviewer leads, and hints and worked solutions stay hidden."}
+          </span>
         </p>
       </div>
 
@@ -150,20 +185,22 @@ export function ChallengeDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Start over?</AlertDialogTitle>
             <AlertDialogDescription>
-              You&apos;re on stage {confirmRestart ? stageNumber(challenge, confirmRestart) : 1} of this
-              challenge. Starting over abandons that attempt and begins a new one with a fresh design. The old
-              design stays in My designs.
+              You&apos;re on stage {confirmRestart ? stageNumber(challenge, confirmRestart.attempt) : 1} of
+              this challenge.{" "}
+              {confirmRestart?.mode === "interview" ? "Starting an interview" : "Starting over"} abandons that
+              attempt and begins a new one with a fresh design. The old design stays in My designs.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Keep my attempt</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => {
+                const mode = confirmRestart?.mode ?? "guided";
                 setConfirmRestart(null);
-                void begin(true);
+                void begin(true, mode);
               }}
             >
-              Start over
+              {confirmRestart?.mode === "interview" ? "Start the interview" : "Start over"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

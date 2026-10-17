@@ -45,7 +45,7 @@ function useStatusFlashes(status: NodeStatus | undefined) {
 }
 
 function ComponentNodeView({ data, selected }: NodeProps<ComponentFlowNode>) {
-  const { node, issueLevel, issueCount, sim, pulse } = data;
+  const { node, issueLevel, issueCount, sim, pulse, highlighted } = data;
   const def = CATALOG[node.type];
   const Icon = ICONS[def.icon];
   const role = def.role;
@@ -62,6 +62,7 @@ function ComponentNodeView({ data, selected }: NodeProps<ComponentFlowNode>) {
         sim && cn("border-2", STATUS_UI[sim.status].border, GLOW[sim.status]),
         sim?.status === "saturated" && "sdl-breathe",
         selected && "border-primary ring-2 ring-primary/30",
+        highlighted && "ring-4 ring-warning/60",
         issueLevel === "error" && !selected && !sim && "border-destructive/60",
       )}
     >

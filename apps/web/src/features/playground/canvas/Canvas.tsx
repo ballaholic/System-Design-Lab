@@ -71,14 +71,15 @@ export function Canvas() {
   const [nodes, setNodes] = useState<ComponentFlowNode[]>(() => toFlowNodes(doc, selection, issues));
   // A connection just made is acknowledged with a short animation, then forgotten so it never replays.
   const fresh = useEditor((s) => s.lastConnection);
+  const highlight = useEditor((s) => s.highlight);
   useEffect(() => {
     if (!fresh) return;
     const timer = setTimeout(() => store.setState({ lastConnection: null }), 1500);
     return () => clearTimeout(timer);
   }, [fresh, store]);
   useEffect(() => {
-    setNodes(toFlowNodes(doc, selection, issues, measured.current, sim, fresh));
-  }, [doc, selection, issues, sim, fresh]);
+    setNodes(toFlowNodes(doc, selection, issues, measured.current, sim, fresh, highlight));
+  }, [doc, selection, issues, sim, fresh, highlight]);
   const edges = useMemo(
     () => toFlowEdges(doc, selection, issues, overlay, fresh),
     [doc, selection, issues, overlay, fresh],

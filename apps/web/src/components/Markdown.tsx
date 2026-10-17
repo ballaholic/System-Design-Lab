@@ -2,8 +2,8 @@ import { Fragment, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Renders the small Markdown subset used by challenge content: paragraphs, "- " lists, **bold**, *italic* and
- * `code`. It builds React elements, never HTML strings, so content can't inject markup.
+ * Renders the small Markdown subset used by challenge content and mentor answers: paragraphs, "- " and "1. "
+ * lists, **bold**, *italic* and `code`. It builds React elements, never HTML strings, so content can't inject markup.
  */
 export function Markdown({ children, className }: { children: string; className?: string }) {
   const blocks = children.trim().split(/\n{2,}/);
@@ -18,6 +18,15 @@ export function Markdown({ children, className }: { children: string; className?
                 <li key={j}>{inline(l.replace(/^\s*[-*] /, ""))}</li>
               ))}
             </ul>
+          );
+        }
+        if (lines.every((l) => /^\s*\d+[.)] /.test(l))) {
+          return (
+            <ol key={i} className="list-decimal space-y-1 pl-5">
+              {lines.map((l, j) => (
+                <li key={j}>{inline(l.replace(/^\s*\d+[.)] /, ""))}</li>
+              ))}
+            </ol>
           );
         }
         return <p key={i}>{inline(lines.join(" "))}</p>;

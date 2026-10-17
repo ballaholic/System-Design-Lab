@@ -59,9 +59,10 @@ export function useStartAttempt() {
   const userId = session?.user.id;
 
   return useCallback(
-    async (challenge: Challenge, restart = false): Promise<StartResult> => {
+    async (challenge: Challenge, restart = false, mode: Attempt["mode"] = "guided"): Promise<StartResult> => {
       const document = starterDocument(challenge);
       if (status !== "authenticated") {
+        if (mode === "interview") throw new Error("Interview mode needs an account with a verified email.");
         const existing = listGuestAttempts().find(
           (a) => a.challengeSlug === challenge.slug && a.status === "in_progress",
         );
@@ -88,6 +89,7 @@ export function useStartAttempt() {
           challengeSlug: challenge.slug,
           architectureId: architecture.id,
           restart,
+          mode,
         });
         void queryClient.invalidateQueries({ queryKey: attemptsKey(userId) });
         void queryClient.invalidateQueries({ queryKey: architecturesKey(userId) });
