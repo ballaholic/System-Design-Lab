@@ -8,6 +8,7 @@ import {
   type ArchNode,
   CURRENT_SCHEMA_VERSION,
   type EdgeId,
+  type EdgeSides,
   type FlowStep,
   type Flows,
   flowsOf,
@@ -52,12 +53,34 @@ export function addEdge(
   source: NodeId,
   target: NodeId,
   id: EdgeId = createId("e"),
+  sides: EdgeSides = {},
 ): {
   doc: ArchitectureDocument;
   edge: ArchEdge;
 } {
   const edge: ArchEdge = { id, source, target };
-  return { doc: { ...doc, edges: [...doc.edges, edge] }, edge };
+  return { doc: withEdgeSides({ ...doc, edges: [...doc.edges, edge] }, id, sides), edge };
+}
+
+export const DEFAULT_EDGE_SIDES = { source: "right", target: "left" } as const satisfies Required<EdgeSides>;
+
+/** The sides a connection is drawn between, with defaults filled in. */
+export function edgeSides(doc: ArchitectureDocument, id: EdgeId): Required<EdgeSides> {
+  return { ...DEFAULT_EDGE_SIDES, ...doc.edgeLayout?.[id] };
+}
+
+/**
+ * Records the sides of a connection, storing only the ones that differ from the default. Callers check the sides
+ * with checkEdgeSides first.
+ */
+export function withEdgeSides(doc: ArchitectureDocument, id: EdgeId, sides: EdgeSides): ArchitectureDocument {
+  const stored: EdgeSides = {};
+  if (sides.source && sides.source !== DEFAULT_EDGE_SIDES.source) stored.source = sides.source;
+  if (sides.target && sides.target !== DEFAULT_EDGE_SIDES.target) stored.target = sides.target;
+  const { [id]: _previous, ...others } = doc.edgeLayout ?? {};
+  const edgeLayout = Object.keys(stored).length > 0 ? { ...others, [id]: stored } : others;
+  const { edgeLayout: _old, ...rest } = doc;
+  return Object.keys(edgeLayout).length > 0 ? { ...rest, edgeLayout } : rest;
 }
 
 export function updateNode(
@@ -117,8 +140,11 @@ export function removeEdges(doc: ArchitectureDocument, edgeIds: Iterable<EdgeId>
       }
       return ids.has(step.edge) ? [] : [step];
     });
+  const { edgeLayout, ...rest } = doc;
+  const keptSides = Object.entries(edgeLayout ?? {}).filter(([id]) => !ids.has(id));
   return {
-    ...doc,
+    ...rest,
+    ...(keptSides.length > 0 ? { edgeLayout: Object.fromEntries(keptSides) } : {}),
     edges: doc.edges.filter((e) => !ids.has(e.id)),
     nodes: doc.nodes.map((node) => {
       if (!isFlowNode(node) || !node.flows) return node;
@@ -246,7 +272,12 @@ export function duplicateNodes(
     source: nodeMap.get(e.source)!,
     target: nodeMap.get(e.target)!,
   }));
-  return { doc: { ...next, edges: [...next.edges, ...edges] }, nodeIds: created };
+  next = { ...next, edges: [...next.edges, ...edges] };
+  for (const e of innerEdges) {
+    const sides = doc.edgeLayout?.[e.id];
+    if (sides) next = withEdgeSides(next, edgeMap.get(e.id)!, sides);
+  }
+  return { doc: next, nodeIds: created };
 }
 
 export interface StepSuggestion {
@@ -269,10 +300,11 @@ export function suggestSteps(doc: ArchitectureDocument, edgeId: EdgeId): StepSug
 
   const flows = flowsOf(source);
   const role = roleOf(target.type);
-  // A worker handles the messages it consumes; a service handles operations routed to it, or any when it has none yet.
+  // A worker only handles the messages it consumes. A service may handle any operation clients send, so it's
+  // offered those too: adding a step for one operation must not hide the suggestion for the next.
   const handled = Object.keys(flows);
-  const operations = doc.operations.filter((o) =>
-    handled.length > 0 ? handled.includes(o.id) : roleOf(source.type) === "service" && o.share > 0,
+  const operations = doc.operations.filter(
+    (o) => handled.includes(o.id) || (roleOf(source.type) === "service" && o.share > 0),
   );
 
   const suggestions: StepSuggestion[] = [];

@@ -119,6 +119,36 @@ describe("loadArchitecture", () => {
     ]);
   });
 
+  it("drops connection sides of connections that no longer exist", () => {
+    const d = {
+      ...validDesign().build(),
+      edgeLayout: { "api-db": { source: "bottom", target: "top" }, gone: { source: "top" } },
+    };
+    const loaded = loadArchitecture(d);
+    if (!loaded.ok) throw new Error(loaded.error);
+    expect(loaded.document.edgeLayout).toEqual({ "api-db": { source: "bottom", target: "top" } });
+    expect(loaded.repairs).toEqual([]);
+  });
+
+  it("quietly drops unusable connection sides, so older designs still load", () => {
+    const d = {
+      ...validDesign().build(),
+      edgeLayout: {
+        "api-db": { source: "left", target: "top" },
+        "api-cache": { source: "middle" },
+        "api-queue": { source: "bottom", target: "right" },
+        "lb-api": "bottom",
+      },
+    };
+    const loaded = loadArchitecture(d);
+    if (!loaded.ok) throw new Error(loaded.error);
+    expect(loaded.document.edgeLayout).toEqual({
+      "api-db": { target: "top" },
+      "api-queue": { source: "bottom" },
+    });
+    expect(loaded.repairs).toEqual([]);
+  });
+
   it("reports schema errors with a path", () => {
     const d = { ...createEmptyDocument(), operations: [] };
     expect(loadArchitecture(d)).toEqual({ ok: false, error: expect.stringContaining("operations") });

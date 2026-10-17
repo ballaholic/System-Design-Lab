@@ -16,9 +16,11 @@ async function dragOntoCanvas(page: Page, name: string, at: { x: number; y: numb
   await library(page).getByRole("button", { name, exact: true }).dragTo(canvas(page), { targetPosition: at });
 }
 
-async function connect(page: Page, from: Locator, to: Locator) {
-  const source = await from.locator(".react-flow__handle-right").boundingBox();
-  const target = await to.locator(".react-flow__handle-left").boundingBox();
+type Side = "top" | "right" | "bottom" | "left";
+
+async function connect(page: Page, from: Locator, to: Locator, sides: [Side, Side] = ["right", "left"]) {
+  const source = await from.locator(`.react-flow__handle-${sides[0]}`).boundingBox();
+  const target = await to.locator(`.react-flow__handle-${sides[1]}`).boundingBox();
   if (!source || !target) throw new Error("handle not found");
   await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
   await page.mouse.down();
@@ -56,6 +58,102 @@ test("adds components by keyboard and by drag, connects them, and keeps the desi
   await page.reload();
   await expect(page.locator(".react-flow__node")).toHaveCount(3);
   await expect(page.locator(".react-flow__edge")).toHaveCount(2);
+});
+
+test("connects a component to one placed under it, from bottom to top, and keeps the sides", async ({
+  page,
+}) => {
+  await dragOntoCanvas(page, "API server", { x: 400, y: 150 });
+  // The view re-centres on the first component, so place the database relative to where the server landed.
+  const pane = (await canvas(page).boundingBox())!;
+  const placed = (await node(page, "API server").boundingBox())!;
+  await dragOntoCanvas(page, "SQL database", {
+    x: placed.x - pane.x + placed.width / 2,
+    y: placed.y - pane.y + 250,
+  });
+  await connect(page, node(page, "API server"), node(page, "SQL database"), ["bottom", "top"]);
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+
+  const assertVertical = async () => {
+    const server = (await node(page, "API server").boundingBox())!;
+    const database = (await node(page, "SQL database").boundingBox())!;
+    const line = (await page.locator(".react-flow__edge-path").first().boundingBox())!;
+    // The line runs from the bottom edge of the server down to the top edge of the database.
+    expect(Math.abs(line.y - (server.y + server.height))).toBeLessThan(8);
+    expect(Math.abs(line.y + line.height - database.y)).toBeLessThan(8);
+  };
+  await assertVertical();
+
+  await expect(page.getByRole("status").filter({ hasText: "Saved in this browser" })).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+  await assertVertical();
+});
+
+/** Places an API server with a SQL database under it and connects them right to left. */
+async function stackedPair(page: Page) {
+  await dragOntoCanvas(page, "API server", { x: 400, y: 150 });
+  const pane = (await canvas(page).boundingBox())!;
+  const placed = (await node(page, "API server").boundingBox())!;
+  await dragOntoCanvas(page, "SQL database", {
+    x: placed.x - pane.x + placed.width / 2,
+    y: placed.y - pane.y + 250,
+  });
+  await connect(page, node(page, "API server"), node(page, "SQL database"));
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+}
+
+/** Drags one end of the selected connection onto a side of a component. A new connection starts selected. */
+async function dragEnd(page: Page, end: "source" | "target", to: Locator, side: Side) {
+  const anchor = (await page.locator(`.react-flow__edgeupdater-${end}`).boundingBox())!;
+  const target = (await to.locator(`.react-flow__handle-${side}`).boundingBox())!;
+  await page.mouse.move(anchor.x + anchor.width / 2, anchor.y + anchor.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 10 });
+  await page.mouse.up();
+}
+
+test("moves either end of a connection to another side by dragging it, never out of the left or into the right", async ({
+  page,
+}) => {
+  await stackedPair(page);
+  const server = node(page, "API server");
+  const database = node(page, "SQL database");
+
+  await dragEnd(page, "source", server, "bottom");
+  await dragEnd(page, "target", database, "top");
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+  const line = (await page.locator(".react-flow__edge-path").first().boundingBox())!;
+  const serverBox = (await server.boundingBox())!;
+  const databaseBox = (await database.boundingBox())!;
+  expect(Math.abs(line.y - (serverBox.y + serverBox.height))).toBeLessThan(8);
+  expect(Math.abs(line.y + line.height - databaseBox.y)).toBeLessThan(8);
+
+  await dragEnd(page, "source", server, "left");
+  await expect(page.getByText(/can't leave from the left side/)).toBeVisible();
+  await dragEnd(page, "target", database, "right");
+  await expect(page.getByText(/can't end on the right side/)).toBeVisible();
+
+  await dragEnd(page, "target", page.locator(".react-flow__node").filter({ hasText: "API server" }), "top");
+  await expect(page.getByText(/draw a new connection/)).toBeVisible();
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+});
+
+test("moves the ends of a connection from the inspector", async ({ page }) => {
+  await stackedPair(page);
+  const inspector = page.getByRole("complementary", { name: "Inspector" });
+  await expect(inspector.getByRole("combobox", { name: "Leaves from" })).toHaveText("Right");
+
+  await inspector.getByRole("combobox", { name: "Leaves from" }).click();
+  await expect(page.getByRole("option", { name: /Left/ })).toBeDisabled();
+  await page.getByRole("option", { name: "Bottom" }).click();
+  await inspector.getByRole("combobox", { name: "Enters at" }).click();
+  await expect(page.getByRole("option", { name: /Right/ })).toBeDisabled();
+  await page.getByRole("option", { name: "Top" }).click();
+
+  const line = (await page.locator(".react-flow__edge-path").first().boundingBox())!;
+  const serverBox = (await node(page, "API server").boundingBox())!;
+  expect(Math.abs(line.y - (serverBox.y + serverBox.height))).toBeLessThan(8);
 });
 
 test("refuses an invalid connection and explains why", async ({ page }) => {

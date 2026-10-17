@@ -81,6 +81,17 @@ export const PositionSchema = z.object({
   y: z.number().min(-1e6).max(1e6),
 });
 
+export const EDGE_SIDES = ["top", "right", "bottom", "left"] as const;
+/** The left side only takes connections in and the right side only sends them out; top and bottom do both. */
+export const SOURCE_SIDES = ["top", "right", "bottom"] as const;
+export const TARGET_SIDES = ["top", "bottom", "left"] as const;
+
+/** Which side of each box a connection leaves and enters. Unset sides default to right (out) and left (in). */
+export const EdgeSidesSchema = z.object({
+  source: z.enum(SOURCE_SIDES).optional(),
+  target: z.enum(TARGET_SIDES).optional(),
+});
+
 export const TrafficProfileSchema = z.object({
   totalRps: z.number().gt(0).max(LIMITS.maxTotalRps),
   mix: z.record(OperationIdSchema, z.number().min(0)).optional(),
@@ -93,6 +104,8 @@ export const ArchitectureDocumentSchema = z.object({
   edges: z.array(EdgeSchema).max(LIMITS.edges),
   /** Presentation only; the simulator ignores it (ADR-015). */
   layout: z.record(Id, PositionSchema),
+  /** Presentation only, like layout: connection sides keyed by edge id. */
+  edgeLayout: z.record(Id, EdgeSidesSchema).optional(),
   notes: z.string().max(LIMITS.notesLength).optional(),
   /** Last-used simulation inputs. */
   traffic: TrafficProfileSchema.optional(),
@@ -144,6 +157,15 @@ export interface Position {
   y: number;
 }
 
+export type EdgeSide = (typeof EDGE_SIDES)[number];
+export type SourceSide = (typeof SOURCE_SIDES)[number];
+export type TargetSide = (typeof TARGET_SIDES)[number];
+
+export interface EdgeSides {
+  source?: SourceSide;
+  target?: TargetSide;
+}
+
 export interface TrafficProfile {
   totalRps: number;
   mix?: Record<OperationId, number>;
@@ -155,6 +177,7 @@ export interface ArchitectureDocument {
   nodes: ArchNode[];
   edges: ArchEdge[];
   layout: Record<NodeId, Position>;
+  edgeLayout?: Record<EdgeId, EdgeSides>;
   notes?: string;
   traffic?: TrafficProfile;
 }

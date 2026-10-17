@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    { "id": "redirect", "name": "Follow short link", "kind": "read", "share": 10 },
+    { "id": "create", "name": "Create short link", "kind": "write", "share": 1 }
+  ],
+  "nodes": [{ "id": "users", "type": "web-client", "label": "Users", "config": { "share": 1 } }],
+  "edges": [],
+  "layout": { "users": { "x": 0, "y": 150 } },
+  "traffic": { "totalRps": 128 }
+}

@@ -15,6 +15,8 @@ export interface GuestDesignSummary {
   nodeCount: number;
   createdAt: string;
   updatedAt: string;
+  /** Set when the design was started from a challenge. */
+  challengeSlug?: string;
 }
 
 export interface GuestDesign extends GuestDesignSummary {
@@ -64,7 +66,12 @@ export function getGuestDesign(id: string): GuestDesign | null {
   }
 }
 
-export function saveGuestDesign(id: string, title: string, document: ArchitectureDocument): GuestSaveResult {
+export function saveGuestDesign(
+  id: string,
+  title: string,
+  document: ArchitectureDocument,
+  challengeSlug?: string,
+): GuestSaveResult {
   const index = readIndex();
   const existing = index.find((d) => d.id === id);
   if (!existing && index.length >= GUEST_DESIGN_LIMIT) return { ok: false, reason: "limit" };
@@ -75,6 +82,9 @@ export function saveGuestDesign(id: string, title: string, document: Architectur
     nodeCount: document.nodes.length,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
+    ...((challengeSlug ?? existing?.challengeSlug)
+      ? { challengeSlug: challengeSlug ?? existing?.challengeSlug }
+      : {}),
   };
   try {
     window.localStorage.setItem(designKey(id), JSON.stringify(document));

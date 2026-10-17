@@ -1,4 +1,6 @@
 using SystemDesignLab.Api.Features.Architectures;
+using SystemDesignLab.Api.Features.Attempts;
+using SystemDesignLab.Api.Features.Challenges;
 using SystemDesignLab.Api.Features.Users;
 using SystemDesignLab.Api.Infrastructure.Auth;
 using SystemDesignLab.Api.Infrastructure.Persistence;
@@ -17,8 +19,12 @@ builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddOpenApi();
 builder.Services.AddUsersFeature();
 builder.Services.AddArchitecturesFeature();
+builder.Services.AddChallengesFeature(builder.Configuration);
 
 var app = builder.Build();
+
+// Fail at startup, not on the first request, when challenge content is invalid (ADR-008).
+app.Services.GetRequiredService<ChallengeCatalog>();
 
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -44,6 +50,9 @@ var api = app.MapGroup("/api")
 
 api.MapUsersEndpoints();
 api.MapArchitecturesEndpoints();
+api.MapAttemptsEndpoints();
+
+app.MapChallengesEndpoints();
 
 app.Run();
 

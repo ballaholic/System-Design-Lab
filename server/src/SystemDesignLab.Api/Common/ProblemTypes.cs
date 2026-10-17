@@ -11,6 +11,8 @@ public static class ProblemTypes
     public const string Validation = Base + "validation";
     public const string DocumentTooLarge = Base + "document-too-large";
     public const string Conflict = Base + "conflict";
+    public const string AttemptInProgress = Base + "attempt-in-progress";
+    public const string AttemptNotInProgress = Base + "attempt-not-in-progress";
     public const string PreconditionRequired = Base + "precondition-required";
     public const string RateLimited = Base + "rate-limited";
     public const string Unexpected = Base + "unexpected";

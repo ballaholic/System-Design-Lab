@@ -130,6 +130,47 @@ describe("editor store actions", () => {
     expect(s().revision).toBe(revision);
   });
 
+  it("connects between the sides the line was drawn from and to", () => {
+    const { s } = setup();
+    const api = s().addComponent("api-server", { x: 0, y: 0 });
+    const db = s().addComponent("sql-database", { x: 0, y: 200 });
+    if (!api.ok || !db.ok) throw new Error();
+    const edge = s().connect(api.value, db.value, { source: "bottom", target: "top" });
+    if (!edge.ok) throw new Error();
+    expect(s().doc.edgeLayout).toEqual({ [edge.value]: { source: "bottom", target: "top" } });
+    s().undo();
+    expect(s().doc).not.toHaveProperty("edgeLayout");
+    expect(s().connect(api.value, db.value, { source: "left" })).toEqual({
+      ok: false,
+      reason: expect.stringContaining("can't leave from the left side"),
+    });
+  });
+
+  it("moves either end of a connection to another side, one undo step each", () => {
+    const { s } = setup();
+    const api = s().addComponent("api-server", { x: 0, y: 0 });
+    const db = s().addComponent("sql-database", { x: 0, y: 200 });
+    if (!api.ok || !db.ok) throw new Error();
+    const edge = s().connect(api.value, db.value);
+    if (!edge.ok) throw new Error();
+
+    expect(s().setEdgeSides(edge.value, { source: "bottom" })).toEqual({ ok: true, value: edge.value });
+    expect(s().doc.edgeLayout).toEqual({ [edge.value]: { source: "bottom" } });
+    s().setEdgeSides(edge.value, { target: "top" });
+    expect(s().doc.edgeLayout).toEqual({ [edge.value]: { source: "bottom", target: "top" } });
+
+    const revision = s().revision;
+    expect(s().setEdgeSides(edge.value, { source: "left" })).toMatchObject({ ok: false });
+    expect(s().setEdgeSides(edge.value, { target: "right" })).toMatchObject({ ok: false });
+    expect(s().revision).toBe(revision);
+    expect(s().setEdgeSides("missing", { source: "top" })).toMatchObject({ ok: false });
+
+    s().setEdgeSides(edge.value, { source: "right", target: "left" });
+    expect(s().doc).not.toHaveProperty("edgeLayout");
+    s().undo();
+    expect(s().doc.edgeLayout).toEqual({ [edge.value]: { source: "bottom", target: "top" } });
+  });
+
   it("deleting an edge removes flow steps that use it in the same undo step", () => {
     const { s } = setup();
     const api = s().addComponent("api-server", { x: 0, y: 0 });

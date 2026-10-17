@@ -2,7 +2,6 @@ import { Menu } from "lucide-react";
 import { Link, NavLink, Outlet, useMatches } from "react-router";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,21 +19,6 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     "rounded-md px-2.5 py-1.5 text-sm transition-colors",
     isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground",
   );
-
-/** Sections that exist in the plan but are not built yet: shown, clearly not interactive. */
-function UpcomingNavItem({ label }: { label: string }) {
-  return (
-    <span
-      className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-muted-foreground/60"
-      aria-disabled="true"
-    >
-      {label}
-      <Badge variant="outline" className="h-4 px-1 text-[10px] font-normal">
-        Soon
-      </Badge>
-    </span>
-  );
-}
 
 export function AppShell() {
   const { status } = useAuth();
@@ -56,13 +40,15 @@ export function AppShell() {
             <NavLink to="/" end className={navLinkClass}>
               {status === "authenticated" ? "Dashboard" : "Home"}
             </NavLink>
+            <NavLink to="/challenges" className={navLinkClass}>
+              Challenges
+            </NavLink>
             <NavLink to="/playground" className={navLinkClass}>
               Playground
             </NavLink>
             <NavLink to="/designs" className={navLinkClass}>
               My designs
             </NavLink>
-            <UpcomingNavItem label="Challenges" />
           </nav>
           <div className="ml-auto flex items-center gap-1">
             <DropdownMenu>
@@ -74,6 +60,9 @@ export function AppShell() {
               <DropdownMenuContent align="end" className="md:hidden">
                 <DropdownMenuItem asChild>
                   <Link to="/">{status === "authenticated" ? "Dashboard" : "Home"}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/challenges">Challenges</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                   <Link to="/playground">Playground</Link>

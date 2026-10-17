@@ -1,5 +1,4 @@
-import { type ArchitectureDocument, createEmptyDocument, loadArchitecture } from "@sdl/architecture";
-import { ReactFlowProvider } from "@xyflow/react";
+import { createEmptyDocument, loadArchitecture } from "@sdl/architecture";
 import { CircleAlert, History } from "lucide-react";
 import { type ReactNode, useEffect, useState } from "react";
 import { Link, Navigate, useLocation, useNavigate, useParams } from "react-router";
@@ -17,8 +16,9 @@ import { importGuestDesigns } from "./persistence/guestImport";
 import { useGuestPersistence } from "./persistence/useGuestPersistence";
 import { useServerPersistence } from "./persistence/useServerPersistence";
 import { PlaygroundEditor } from "./PlaygroundEditor";
-import { EditorStoreContext, useEditorStore } from "./store/editorContext";
-import { createEditorStore, type EditorStore } from "./store/editorStore";
+import { EditorSession, FullHeight } from "./EditorSession";
+import { useEditorStore } from "./store/editorContext";
+import type { EditorStore } from "./store/editorStore";
 
 type SessionState = { sessionKey?: string } | null;
 
@@ -54,21 +54,6 @@ function useOnCreated(sessionKey: string) {
   const navigate = useNavigate();
   return (id: string) =>
     navigate(`/playground/${id}`, { replace: true, state: { sessionKey } satisfies SessionState });
-}
-
-function EditorSession({
-  doc,
-  children,
-}: {
-  doc: ArchitectureDocument;
-  children: (store: EditorStore) => ReactNode;
-}) {
-  const [store] = useState(() => createEditorStore(doc));
-  return (
-    <EditorStoreContext.Provider value={store}>
-      <ReactFlowProvider>{children(store)}</ReactFlowProvider>
-    </EditorStoreContext.Provider>
-  );
 }
 
 function NewDesign({ sessionKey, signedIn }: { sessionKey: string; signedIn: boolean }) {
@@ -257,10 +242,6 @@ function DraftBanner({ draft, draftId, stale }: { draft: Draft; draftId: string;
       </Button>
     </div>
   );
-}
-
-function FullHeight({ children }: { children: ReactNode }) {
-  return <div className="flex h-[calc(100svh-3.5rem)] flex-col">{children}</div>;
 }
 
 function LoadProblem({ title, children }: { title: string; children: ReactNode }) {

@@ -23,6 +23,7 @@ type ArchitectureDocument = {
   nodes: ArchNode[];
   edges: ArchEdge[];
   layout: Record<NodeId, { x: number; y: number }>;   // presentation; ignored by simulator
+  edgeLayout?: Record<EdgeId, { source?: SourceSide; target?: TargetSide }>; // presentation: sides a line leaves/enters
   notes?: string;                                       // free-form user assumptions / notes (≤ 4 KB)
   traffic?: TrafficProfile;                             // last-used simulation inputs
 };
@@ -70,6 +71,11 @@ Design notes:
 - Node `config` is typed per component through the catalog. Unknown keys are stripped on load, and
   missing keys are filled from defaults. This is also how the catalog evolves without document
   migrations.
+- `edgeLayout` follows the same rule as `layout`: it records which side of each box a connection
+  leaves and enters (`EdgeSide` is `"top" | "right" | "bottom" | "left"`). Connections come in on the left and leave on the
+  right, so `SourceSide` excludes left and `TargetSide` excludes right; on load, unusable sides are dropped quietly. Only sides that differ from the
+  default (out on the right, in on the left) are stored, entries go with their connection, and the
+  simulator and its input hash ignore it. It's optional and additive, so it needed no version bump.
 - Document migrations (`schemaVersion` bumps) are needed only for structural changes.
 
 ### 1.1 Component catalog
@@ -205,6 +211,7 @@ type SweepResult = {
 
 ```ts
 type ChallengeDefinition = {
+  schemaVersion: 1;
   slug: string;                       // "url-shortener"
   version: number;                    // bump on criteria changes; attempts record the version
   title: string;
@@ -212,12 +219,12 @@ type ChallengeDefinition = {
   difficulty: "beginner" | "intermediate" | "advanced";
   topics: string[];                   // "caching", "async-processing", ...
   order: number;                      // curriculum order
-  reference?: { source: string; chapter: number };   // attribution only
+  reference?: { source: string; chapter?: number };  // attribution only
   objectives: string[];
   functionalRequirements: string[];
   nonFunctionalRequirements: string[];
   constraints: string[];              // assumptions given to the learner
-  starterArchitecture?: string;       // path to starter.json
+  starterArchitecture?: string;       // file name, e.g. "starter.json"
   allowedComponents?: ComponentType[];
   stages: ChallengeStage[];
 };
@@ -225,17 +232,17 @@ type ChallengeDefinition = {
 type ChallengeStage = {
   id: string;                         // "s1-baseline"
   title: string;
-  briefMd: string;                    // path to markdown; original writing
+  brief: string;                      // markdown file name; original writing
   traffic: TrafficProfile;            // stage-defined load
-  scenario?: FailureScenarioTemplate; // e.g. fail "first sql-database"
+  scenario?: { failures: Array<{ kind: FailureKind; target: { type: ComponentType; pick?: "first" | "most-writes" }; count?: number }> };
   exercises?: Exercise[];             // estimation / decision checkpoints
   hints: Array<{ id: string; md: string }>;   // progressive
   criteria: Criterion[];
 };
 
 type Exercise =
-  | { kind: "estimate"; id: string; prompt: string; unit: string; expected: number; tolerance: number; workedSolutionMd: string }
-  | { kind: "decision"; id: string; prompt: string; options: Array<{ id: string; label: string; feedbackMd: string; recommended?: boolean }> };
+  | { kind: "estimate"; id: string; prompt: string; unit: string; expected: number; tolerance: number; workedSolution: string } // relative tolerance; markdown
+  | { kind: "decision"; id: string; prompt: string; options: Array<{ id: string; label: string; feedback: string; recommended?: boolean }> };
 
 type Criterion =
   | { kind: "has-component"; id: string; description: string; category?: string; type?: ComponentType; min?: number }
@@ -245,13 +252,21 @@ type Criterion =
   | { kind: "has-flow"; id: string; description: string; operation: OperationId; usesStep?: "cache-lookup" | "publish" }
   | { kind: "sim-no-saturation"; id: string; description: string; types?: ComponentType[] }
   | { kind: "sim-max-utilization"; id: string; description: string; type: ComponentType; max: number }
-  | { kind: "exercise-completed"; id: string; description: string; exerciseId: string }
-  | { kind: "review-requested"; id: string; description: string; optional: true };
+  | { kind: "exercise-completed"; id: string; description: string; exerciseId: string }   // this or an earlier stage
+  | { kind: "review-requested"; id: string; description: string; optional: true };          // Phase 5
+// Every criterion may be marked optional: optional criteria don't block a stage.
 ```
 
 `evaluate(stage, doc, simResultForStage, exerciseAnswers) → CriterionResult[]`, where
 `CriterionResult = { id, passed, detail }`. Simulation criteria run the engine with the **stage's**
 traffic and scenario, not the user's sandbox settings, so passing a stage means something.
+
+*As built in Phase 4:* the content check (`packages/challenges/test/content.test.ts`, part of `pnpm test`)
+validates every folder in `content/challenges`: schema, referenced files, unique ids, references between
+criteria, exercises and operations, a valid starter, and that each stage's reference solution in
+`solutions/<stageId>.json` passes while the starter doesn't pass stage 1. Exercise answers are
+`{ kind: "estimate", value, correct, attempts, revealed, answeredAt }` or
+`{ kind: "decision", optionId, answeredAt }`; an estimate counts as done when it's correct or its solution was revealed.
 
 ## 4. Persistence (PostgreSQL, schema `app`)
 
@@ -408,7 +423,8 @@ statements (one per counter, in one transaction). Zero rows updated means the bu
 | `GET /api/challenges` | anonymous | Catalog |
 | `GET /api/challenges/{slug}` | anonymous | Definition (including stages and markdown) |
 | `GET /api/attempts?status=` | user | User attempts |
-| `POST /api/attempts` | user | Start (`slug`, `mode`) |
+| `GET /api/attempts/{id}` | owner | One attempt |
+| `POST /api/attempts` | user | Start (`challengeSlug`, `mode`, `architectureId`, `restart`); 409 `attempt-in-progress` with `attemptId` unless `restart` |
 | `PATCH /api/attempts/{id}` | owner | Update stage results, answers, hints, architecture link |
 | `GET /api/mentor/conversations?mode=&architectureId=` | user | List |
 | `POST /api/mentor/conversations` | verified user | Create |

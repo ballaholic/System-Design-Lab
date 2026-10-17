@@ -1122,6 +1122,34 @@
         ]
       }
     },
+    "edgeLayout": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "top",
+              "right",
+              "bottom"
+            ]
+          },
+          "target": {
+            "type": "string",
+            "enum": [
+              "top",
+              "bottom",
+              "left"
+            ]
+          }
+        }
+      }
+    },
     "notes": {
       "type": "string",
       "maxLength": 4096

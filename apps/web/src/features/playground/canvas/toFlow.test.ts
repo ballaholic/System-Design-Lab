@@ -78,6 +78,16 @@ describe("toFlow", () => {
     expect(byId["api-db"]!.data).toMatchObject({ async: false, carries: ["Read"] });
     expect(byId["api-spare"]!.data).toMatchObject({ carries: [], label: "unused" });
   });
+
+  it("attaches each connection to its saved sides, right to left by default", () => {
+    const d = {
+      ...design(),
+      edgeLayout: { "api-db": { source: "bottom" as const, target: "top" as const } },
+    };
+    const byId = Object.fromEntries(toFlowEdges(d, EMPTY_SELECTION, []).map((e) => [e.id, e]));
+    expect(byId["api-db"]).toMatchObject({ sourceHandle: "bottom", targetHandle: "top" });
+    expect(byId["c-lb"]).toMatchObject({ sourceHandle: "right", targetHandle: "left" });
+  });
 });
 
 describe("simulation overlay", () => {

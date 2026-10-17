@@ -8,8 +8,12 @@ const port = 5179;
 export default defineConfig({
   testDir: "e2e",
   fullyParallel: true,
+  // Every worker loads the app from one dev server; more than a few at once mostly measures the compile.
+  workers: process.env.CI ? undefined : 4,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
+  // The first visits compile the app on a cold dev server while every worker starts at once.
+  expect: { timeout: 15_000 },
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
   use: {
     baseURL: `http://localhost:${port}`,

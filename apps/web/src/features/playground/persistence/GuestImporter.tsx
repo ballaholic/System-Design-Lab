@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth/authContext";
 import { architecturesKey } from "@/lib/api/architectures";
+import { attemptsKey } from "@/lib/api/attempts";
 import { errorMessage } from "@/lib/api/client";
 import { importGuestDesigns } from "./guestImport";
 
@@ -17,11 +18,15 @@ export function GuestImporter() {
     importGuestDesigns()
       .then((result) => {
         if (!result) return;
-        if (result.imported > 0) {
+        if (result.imported > 0 || result.attempts > 0) {
+          const designs = `${result.imported} design${result.imported === 1 ? "" : "s"}`;
           toast.success(
-            `Moved ${result.imported} design${result.imported === 1 ? "" : "s"} from this browser to your account.`,
+            result.attempts > 0
+              ? `Moved ${designs} and your challenge progress from this browser to your account.`
+              : `Moved ${designs} from this browser to your account.`,
           );
           void queryClient.invalidateQueries({ queryKey: architecturesKey(userId) });
+          void queryClient.invalidateQueries({ queryKey: attemptsKey(userId) });
         }
         if (result.skipped > 0) {
           toast.warning(

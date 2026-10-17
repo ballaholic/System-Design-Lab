@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "slug": "url-shortener",
+  "version": 1,
+  "title": "URL Shortener",
+  "summary": "Turn long links into short ones, then keep redirects fast when a link goes viral and when the database fails.",
+  "difficulty": "beginner",
+  "topics": ["estimation", "load-balancing", "caching", "availability"],
+  "order": 1,
+  "reference": { "source": "System Design Interview by Alex Xu", "chapter": 8 },
+  "objectives": [
+    "Estimate traffic and storage from a few product numbers.",
+    "Build a request path from clients to a database and define what each operation does.",
+    "Find the bottleneck under load and fix it with horizontal scaling and a cache.",
+    "Understand what keeps working, and what doesn't, when the database goes down."
+  ],
+  "functionalRequirements": [
+    "Create a short link for a long URL.",
+    "Following a short link redirects to the original URL.",
+    "Show how many times each link was followed."
+  ],
+  "nonFunctionalRequirements": [
+    "Redirects stay fast and available, even for links that suddenly become popular.",
+    "Links never point at the wrong URL."
+  ],
+  "constraints": [
+    "1 million new short links per day.",
+    "Links are followed 10 times as often as they're created.",
+    "Each stored link takes about 500 bytes.",
+    "Links are kept for 5 years."
+  ],
+  "starterArchitecture": "starter.json",
+  "stages": [
+    {
+      "id": "s1-baseline",
+      "title": "A working baseline",
+      "brief": "s1-baseline.md",
+      "traffic": { "totalRps": 128 },
+      "exercises": [
+        {
+          "kind": "estimate",
+          "id": "est-redirect-rate",
+          "prompt": "On an average day, about how many redirects per second does the service handle?",
+          "unit": "redirects/s",
+          "expected": 116,
+          "tolerance": 0.3,
+          "workedSolution": "1 million links are created per day and links are followed 10 times as often, so there are **10 million redirects per day**.\n\nA day has 86,400 seconds: 10,000,000 / 86,400 ≈ **116 redirects per second**. Creating links adds 1,000,000 / 86,400 ≈ 12 per second, so the total is around 128 requests per second.\n\nAnother route: with 10 redirects for every create, redirects are 10 of every 11 requests, and 128 × 10 / 11 ≈ 116.\n\nA shortcut for mental math: a day is roughly 100,000 seconds, so 10 million per day is about 100 per second.\n\nRound generously. Estimates are about the order of magnitude: 100 and 150 lead to the same design."
+        },
+        {
+          "kind": "estimate",
+          "id": "est-storage",
+          "prompt": "How much storage do the links need over 5 years?",
+          "unit": "GB",
+          "expected": 912,
+          "tolerance": 0.3,
+          "workedSolution": "Links in 5 years: 1,000,000 × 365 × 5 ≈ **1.8 billion**.\n\nStorage: 1.8 billion × 500 bytes ≈ 900 billion bytes ≈ **900 GB**, a little under a terabyte.\n\nThat fits on one database server, so storage size isn't what forces the design to change. Traffic is."
+        },
+        {
+          "kind": "decision",
+          "id": "id-generation",
+          "prompt": "How should the service generate the short code for a new link?",
+          "options": [
+            {
+              "id": "hash-prefix",
+              "label": "Hash the long URL and keep the first 7 characters.",
+              "feedback": "The same URL always gets the same code, which avoids duplicates. But two different URLs can share a prefix, so every create needs a collision check and a fallback, and the check gets more expensive as the table grows."
+            },
+            {
+              "id": "counter-base62",
+              "label": "Give each link the next number from a unique counter, written in base 62 (0-9, a-z, A-Z).",
+              "feedback": "No collisions and very short codes: 7 base-62 characters cover 3.5 trillion links. The catch is that you need a counter that works across servers (for example, each server reserving blocks of numbers), and sequential codes are easy to guess. Shuffle or encrypt the number if that matters.",
+              "recommended": true
+            },
+            {
+              "id": "random",
+              "label": "Pick 7 random characters and retry if the code is taken.",
+              "feedback": "Simple and hard to guess. Collisions are rare while the table is mostly empty, but every create still needs a uniqueness check, and retries grow as codes fill up."
+            }
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "id": "s1-path",
+          "md": "Build the request path from left to right: **Users → Load balancer → API server → SQL database**. Drag from the right-hand handle of one component to the left-hand handle of the next."
+        },
+        {
+          "id": "s1-flows",
+          "md": "A server only receives operations it has a flow for. Click the **API server → SQL database** connection and press **Add** on the suggested steps, or select the API server and press **Handle** for each operation."
+        },
+        {
+          "id": "s1-estimate",
+          "md": "For the estimate, divide requests per day by the number of seconds in a day (86,400)."
+        }
+      ],
+      "criteria": [
+        {
+          "kind": "path-exists",
+          "id": "s1-path",
+          "description": "Requests reach a SQL database through a load balancer and an API server.",
+          "fromRole": "source",
+          "toType": "sql-database",
+          "via": ["load-balancer", "api-server"]
+        },
+        {
+          "kind": "has-flow",
+          "id": "s1-redirect-flow",
+          "description": "A server handles \"Follow short link\".",
+          "operation": "redirect"
+        },
+        {
+          "kind": "has-flow",
+          "id": "s1-create-flow",
+          "description": "A server handles \"Create short link\".",
+          "operation": "create"
+        },
+        {
+          "kind": "sim-success-rate",
+          "id": "s1-success",
+          "description": "Every request succeeds at 128 requests/s.",
+          "min": 0.999
+        },
+        {
+          "kind": "exercise-completed",
+          "id": "s1-estimate-rate",
+          "description": "Estimate the redirect rate.",
+          "exerciseId": "est-redirect-rate"
+        },
+        {
+          "kind": "exercise-completed",
+          "id": "s1-estimate-storage",
+          "description": "Estimate the storage.",
+          "exerciseId": "est-storage"
+        },
+        {
+          "kind": "exercise-completed",
+          "id": "s1-decide-ids",
+          "description": "Choose how to generate short codes.",
+          "exerciseId": "id-generation"
+        }
+      ]
+    },
+    {
+      "id": "s2-viral",
+      "title": "Going viral",
+      "brief": "s2-viral.md",
+      "traffic": { "totalRps": 11000 },
+      "exercises": [
+        {
+          "kind": "decision",
+          "id": "redirect-status",
+          "prompt": "Should redirects answer with 301 (moved permanently) or 302 (found, temporary)?",
+          "options": [
+            {
+              "id": "permanent-301",
+              "label": "301: browsers remember the redirect and skip the service next time.",
+              "feedback": "Fewer requests reach you, because repeat visits are served from the browser's cache. But those visits are invisible, so click counts are wrong, and you can't change where a link points once browsers have cached it."
+            },
+            {
+              "id": "temporary-302",
+              "label": "302: every visit comes back to the service, which then redirects.",
+              "feedback": "Every click reaches you, so counting clicks (a requirement here) works and links can be changed later. The cost is more traffic, which is exactly why the redirect path needs to be cheap: a cache in front of the database.",
+              "recommended": true
+            }
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "id": "s2-find",
+          "md": "Open **Simulate**. At 11,000 requests/s, which components turn red? The **Bottlenecks** list orders them."
+        },
+        {
+          "id": "s2-scale",
+          "md": "API servers are stateless, so you can add instances. The Summary shows how many instances keep them below 70%."
+        },
+        {
+          "id": "s2-cache",
+          "md": "Most redirects are for a few popular links. Add a **Cache**, connect **API server → Cache** and accept the suggestion to look it up first. Only misses then read the database."
+        }
+      ],
+      "criteria": [
+        {
+          "kind": "sim-no-saturation",
+          "id": "s2-no-saturation",
+          "description": "No component is saturated at 11,000 requests/s."
+        },
+        {
+          "kind": "sim-success-rate",
+          "id": "s2-success",
+          "description": "At least 99% of requests succeed.",
+          "min": 0.99
+        },
+        {
+          "kind": "has-component",
+          "id": "s2-cache",
+          "description": "The design has a cache.",
+          "type": "redis-cache"
+        },
+        {
+          "kind": "has-flow",
+          "id": "s2-cache-aside",
+          "description": "\"Follow short link\" looks up the cache before the database.",
+          "operation": "redirect",
+          "usesStep": "cache-lookup"
+        },
+        {
+          "kind": "exercise-completed",
+          "id": "s2-decide-status",
+          "description": "Choose the redirect status code.",
+          "exerciseId": "redirect-status"
+        }
+      ]
+    },
+    {
+      "id": "s3-outage",
+      "title": "The database goes down",
+      "brief": "s3-outage.md",
+      "traffic": { "totalRps": 11000 },
+      "scenario": {
+        "failures": [
+          { "kind": "database-primary-down", "target": { "type": "sql-database", "pick": "most-writes" } }
+        ]
+      },
+      "exercises": [
+        {
+          "kind": "decision",
+          "id": "write-availability",
+          "prompt": "Creating links fails while the database is down. What would you change?",
+          "options": [
+            {
+              "id": "replica-failover",
+              "label": "Run a replica and promote it automatically when the primary fails.",
+              "feedback": "The standard answer. Writes are unavailable for the seconds to minutes a failover takes, and the newest writes can be lost if replication is asynchronous. The simulator doesn't model failover, which is why it reports it as not modeled instead of guessing a number.",
+              "recommended": true
+            },
+            {
+              "id": "queue-creates",
+              "label": "Accept creates into a durable queue and write them when the database is back.",
+              "feedback": "Creates keep being accepted, which helps availability. But a new link can't be followed until it's written, so the API has to report it as pending, and replays must be idempotent. A good complement to failover, not a replacement."
+            },
+            {
+              "id": "cache-only",
+              "label": "Write new links to the cache until the database is back.",
+              "feedback": "Tempting, but a cache isn't durable: an eviction or restart loses links for good, which breaks the requirement that links never point at the wrong URL (or nowhere)."
+            },
+            {
+              "id": "fail-fast",
+              "label": "Return an error and let clients retry later.",
+              "feedback": "Honest and simple, and sometimes good enough when writes are rare. Users see failures for the whole outage, though, so most services pair this with failover."
+            }
+          ]
+        }
+      ],
+      "hints": [
+        {
+          "id": "s3-look",
+          "md": "In this stage's simulation, the database with the most writes is down. Which operation still mostly succeeds, and why?"
+        },
+        {
+          "id": "s3-cache",
+          "md": "Cache hits don't need the database. Misses and creates do, so they fail."
+        },
+        {
+          "id": "s3-decide",
+          "md": "No setting fixes writes here, because the simulator doesn't model failover. The question is how you'd change the design."
+        }
+      ],
+      "criteria": [
+        {
+          "kind": "sim-success-rate",
+          "id": "s3-redirects-survive",
+          "description": "At least 75% of redirects still work while the database is down.",
+          "operation": "redirect",
+          "min": 0.75
+        },
+        {
+          "kind": "exercise-completed",
+          "id": "s3-decide-writes",
+          "description": "Decide how to keep creating links during an outage.",
+          "exerciseId": "write-availability"
+        }
+      ]
+    }
+  ]
+}

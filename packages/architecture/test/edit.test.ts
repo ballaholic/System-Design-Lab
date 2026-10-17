@@ -3,10 +3,12 @@ import {
   addEdge,
   addNode,
   ArchitectureDocumentSchema,
+  checkEdgeSides,
   createEmptyDocument,
   createId,
   createNode,
   duplicateNodes,
+  edgeSides,
   flowsOf,
   flowUsages,
   ID_PATTERN,
@@ -20,6 +22,7 @@ import {
   suggestSteps,
   updateNode,
   validateArchitecture,
+  withEdgeSides,
 } from "../src";
 import { call, doc, lookup, publish, validDesign } from "./builder";
 
@@ -77,6 +80,57 @@ describe("creating", () => {
     d = setFlow(d, "api", "read", null);
     expect(flows(d, "api")).toEqual({});
     expect(setFlow(d, "lb", "read", [])).toEqual(d); // not a flow node
+  });
+});
+
+describe("connection sides", () => {
+  const twoBoxes = () => doc().node("api", "api-server").node("db", "sql-database").build();
+
+  it("default to right and left, and only sides that differ are stored", () => {
+    const { doc: plain } = addEdge(twoBoxes(), "api", "db", "e1");
+    expect(plain).not.toHaveProperty("edgeLayout");
+    expect(edgeSides(plain, "e1")).toEqual({ source: "right", target: "left" });
+
+    const { doc: stacked } = addEdge(twoBoxes(), "api", "db", "e1", { source: "bottom", target: "top" });
+    expect(stacked.edgeLayout).toEqual({ e1: { source: "bottom", target: "top" } });
+    expect(edgeSides(stacked, "e1")).toEqual({ source: "bottom", target: "top" });
+    expect(ArchitectureDocumentSchema.safeParse(stacked).success).toBe(true);
+
+    const { doc: half } = addEdge(twoBoxes(), "api", "db", "e1", { source: "right", target: "top" });
+    expect(half.edgeLayout).toEqual({ e1: { target: "top" } });
+    expect(withEdgeSides(half, "e1", { source: "right", target: "left" })).not.toHaveProperty("edgeLayout");
+  });
+
+  it("never leave from the left or end on the right; top and bottom work both ways", () => {
+    expect(checkEdgeSides({ source: "top", target: "bottom" })).toEqual({ ok: true });
+    expect(checkEdgeSides({ source: "right", target: "left" })).toEqual({ ok: true });
+    expect(checkEdgeSides({ target: "right" })).toEqual({
+      ok: false,
+      reason: expect.stringContaining("can't end on the right side"),
+    });
+    expect(checkEdgeSides({ source: "left" })).toEqual({
+      ok: false,
+      reason: expect.stringContaining("can't leave from the left side"),
+    });
+    const leaving = { ...twoBoxes(), edges: [{ id: "e1", source: "api", target: "db" }] };
+    for (const sides of [{ source: "left" }, { target: "right" }]) {
+      expect(ArchitectureDocumentSchema.safeParse({ ...leaving, edgeLayout: { e1: sides } }).success).toBe(
+        false,
+      );
+    }
+  });
+
+  it("are removed with their connection and copied with duplicates", () => {
+    const base = doc().node("api", "api-server").node("db", "sql-database").node("c", "redis-cache").build();
+    let d = addEdge(base, "api", "db", "e1", { source: "bottom", target: "top" }).doc;
+    d = addEdge(d, "api", "c", "e2", { target: "bottom" }).doc;
+
+    expect(removeEdges(d, ["e1"]).edgeLayout).toEqual({ e2: { target: "bottom" } });
+    expect(removeNodes(d, ["api"])).not.toHaveProperty("edgeLayout");
+
+    const copy = duplicateNodes(d, ["api", "db"]);
+    const copied = copy.doc.edges.find((e) => e.source === copy.nodeIds[0] && e.target === copy.nodeIds[1])!;
+    expect(edgeSides(copy.doc, copied.id)).toEqual({ source: "bottom", target: "top" });
   });
 });
 
@@ -239,6 +293,17 @@ describe("suggestSteps", () => {
       description: 'Look up "c" first',
       steps: [lookup("api-c", [], true)],
     });
+  });
+
+  it("keeps offering client operations a service doesn't handle yet, so accepting one doesn't hide the next", () => {
+    const d = doc()
+      .node("api", "api-server", { flows: { read: [call("api-db")] } })
+      .node("db", "sql-database")
+      .edge("api", "db")
+      .build();
+    d.operations.push({ id: "notify", name: "Notify", kind: "write", share: 0 });
+    // "write" is still offered; the message-only "notify" isn't, because clients never send it.
+    expect(suggestSteps(d, "api-db").map((x) => x.operation)).toEqual(["write"]);
   });
 
   it("a worker gets suggestions only for messages it handles", () => {

@@ -17,20 +17,39 @@ public sealed class PostgresFixture : IAsyncLifetime
     public string ConnectionString { get; private set; } = "";
     private string? _unavailableReason;
 
+    /// <summary>
+    /// Optional connection string to an existing PostgreSQL server, for machines without Docker. A throwaway
+    /// database is created on it for the run and dropped afterwards.
+    /// </summary>
+    public const string ServerVariable = "SDL_TEST_POSTGRES";
+
+    private string? _serverConnectionString;
+    private string? _databaseName;
+
     public async ValueTask InitializeAsync()
     {
-        try
+        if (Environment.GetEnvironmentVariable(ServerVariable) is { Length: > 0 } server)
         {
-            _container = new PostgreSqlBuilder("postgres:17-alpine").Build();
-            await _container.StartAsync();
+            _serverConnectionString = server;
+            _databaseName = $"sdl_test_{Guid.NewGuid():N}";
+            await ExecuteOnServerAsync($"CREATE DATABASE {_databaseName}");
+            ConnectionString = new Npgsql.NpgsqlConnectionStringBuilder(server) { Database = _databaseName }.ConnectionString;
         }
-        catch (Exception ex) when (Environment.GetEnvironmentVariable("CI") is null)
+        else
         {
-            _unavailableReason = $"Docker is not available for Testcontainers ({ex.GetType().Name}). These tests run in CI.";
-            return;
+            try
+            {
+                _container = new PostgreSqlBuilder("postgres:17-alpine").Build();
+                await _container.StartAsync();
+            }
+            catch (Exception ex) when (Environment.GetEnvironmentVariable("CI") is null)
+            {
+                _unavailableReason = $"Docker is not available for Testcontainers ({ex.GetType().Name}). These tests run in CI, or set {ServerVariable}.";
+                return;
+            }
+            ConnectionString = _container.GetConnectionString();
         }
 
-        ConnectionString = _container.GetConnectionString();
         Api = new ApiFactory(ConnectionString);
 
         await using var scope = Api.Services.CreateAsyncScope();
@@ -52,6 +71,19 @@ public sealed class PostgresFixture : IAsyncLifetime
     {
         if (Api is not null) await Api.DisposeAsync();
         if (_container is not null) await _container.DisposeAsync();
+        if (_databaseName is not null)
+        {
+            Npgsql.NpgsqlConnection.ClearAllPools();
+            await ExecuteOnServerAsync($"DROP DATABASE IF EXISTS {_databaseName} WITH (FORCE)");
+        }
+    }
+
+    private async Task ExecuteOnServerAsync(string sql)
+    {
+        await using var connection = new Npgsql.NpgsqlConnection(_serverConnectionString);
+        await connection.OpenAsync();
+        await using var command = new Npgsql.NpgsqlCommand(sql, connection);
+        await command.ExecuteNonQueryAsync();
     }
 }
 

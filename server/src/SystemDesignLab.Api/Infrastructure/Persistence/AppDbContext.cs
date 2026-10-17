@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SystemDesignLab.Api.Features.Architectures;
+using SystemDesignLab.Api.Features.Attempts;
 using SystemDesignLab.Api.Features.Users;
 
 namespace SystemDesignLab.Api.Infrastructure.Persistence;
@@ -12,6 +13,8 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
 
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
     public DbSet<Architecture> Architectures => Set<Architecture>();
+    public DbSet<ArchitectureSnapshot> ArchitectureSnapshots => Set<ArchitectureSnapshot>();
+    public DbSet<ChallengeAttempt> Attempts => Set<ChallengeAttempt>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
