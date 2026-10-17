@@ -6,3 +6,4 @@ docs/
 **/coverage/
 apps/web/src/components/ui/
 **/components.json
+schemas/architecture.schema.json

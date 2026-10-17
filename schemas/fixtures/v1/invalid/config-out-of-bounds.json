@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    {
+      "id": "read",
+      "name": "Read",
+      "kind": "read",
+      "share": 1
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "api-server",
+      "label": "API",
+      "config": {
+        "instances": 0
+      }
+    }
+  ],
+  "edges": [],
+  "layout": {}
+}

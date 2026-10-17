@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    {
+      "id": "read",
+      "name": "Read",
+      "kind": "read",
+      "share": 1
+    }
+  ],
+  "nodes": [
+    {
+      "id": "n1",
+      "type": "mainframe",
+      "label": "Mainframe",
+      "config": {}
+    }
+  ],
+  "edges": [],
+  "layout": {}
+}

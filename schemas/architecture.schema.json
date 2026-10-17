@@ -1,0 +1,1161 @@
+{
+  "$id": "https://systemdesignlab.dev/schemas/architecture.v1.schema.json",
+  "title": "System Design Lab architecture document",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "number",
+      "const": 1
+    },
+    "operations": {
+      "minItems": 1,
+      "maxItems": 20,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,39}$"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "read",
+              "write"
+            ]
+          },
+          "share": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "share"
+        ]
+      }
+    },
+    "nodes": {
+      "maxItems": 150,
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "web-client"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "share": {
+                    "default": 1,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "operations": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "mobile-client"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "share": {
+                    "default": 1,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "operations": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                    }
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "api-gateway"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "capacityRps": {
+                    "default": 50000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  },
+                  "rateLimitRps": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "load-balancer"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "capacityRps": {
+                    "default": 50000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "api-server"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "instances": {
+                    "default": 2,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000
+                  },
+                  "capacityPerInstanceRps": {
+                    "default": 1000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              },
+              "flows": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                },
+                "additionalProperties": {
+                  "maxItems": 20,
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "call"
+                          },
+                          "edge": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                          },
+                          "operation": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                          },
+                          "as": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "write"
+                            ]
+                          },
+                          "optional": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "edge"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "publish"
+                          },
+                          "edge": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                          },
+                          "message": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                          },
+                          "optional": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "edge"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "cache-lookup"
+                          },
+                          "edge": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                          },
+                          "onMiss": {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "call"
+                                    },
+                                    "edge": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                    },
+                                    "operation": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                                    },
+                                    "as": {
+                                      "type": "string",
+                                      "enum": [
+                                        "read",
+                                        "write"
+                                      ]
+                                    },
+                                    "optional": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "edge"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "publish"
+                                    },
+                                    "edge": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                    },
+                                    "message": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                                    },
+                                    "optional": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "edge"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "cache-lookup"
+                                    },
+                                    "edge": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                    },
+                                    "onMiss": {
+                                      "maxItems": 20,
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "call"
+                                              },
+                                              "edge": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "operation": {
+                                                "type": "string",
+                                                "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                                              },
+                                              "as": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "read",
+                                                  "write"
+                                                ]
+                                              },
+                                              "optional": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "edge"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "publish"
+                                              },
+                                              "edge": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "message": {
+                                                "type": "string",
+                                                "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                                              },
+                                              "optional": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "edge"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "populate": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "edge",
+                                    "onMiss"
+                                  ]
+                                }
+                              ]
+                            }
+                          },
+                          "populate": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "edge",
+                          "onMiss"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "background-worker"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "instances": {
+                    "default": 1,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000
+                  },
+                  "throughputPerInstance": {
+                    "default": 200,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              },
+              "flows": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                },
+                "additionalProperties": {
+                  "maxItems": 20,
+                  "type": "array",
+                  "items": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "call"
+                          },
+                          "edge": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                          },
+                          "operation": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                          },
+                          "as": {
+                            "type": "string",
+                            "enum": [
+                              "read",
+                              "write"
+                            ]
+                          },
+                          "optional": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "edge"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "publish"
+                          },
+                          "edge": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                          },
+                          "message": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                          },
+                          "optional": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "edge"
+                        ]
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string",
+                            "const": "cache-lookup"
+                          },
+                          "edge": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                          },
+                          "onMiss": {
+                            "maxItems": 20,
+                            "type": "array",
+                            "items": {
+                              "oneOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "call"
+                                    },
+                                    "edge": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                    },
+                                    "operation": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                                    },
+                                    "as": {
+                                      "type": "string",
+                                      "enum": [
+                                        "read",
+                                        "write"
+                                      ]
+                                    },
+                                    "optional": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "edge"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "publish"
+                                    },
+                                    "edge": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                    },
+                                    "message": {
+                                      "type": "string",
+                                      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                                    },
+                                    "optional": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "edge"
+                                  ]
+                                },
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "type": {
+                                      "type": "string",
+                                      "const": "cache-lookup"
+                                    },
+                                    "edge": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                    },
+                                    "onMiss": {
+                                      "maxItems": 20,
+                                      "type": "array",
+                                      "items": {
+                                        "oneOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "call"
+                                              },
+                                              "edge": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "operation": {
+                                                "type": "string",
+                                                "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                                              },
+                                              "as": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "read",
+                                                  "write"
+                                                ]
+                                              },
+                                              "optional": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "edge"
+                                            ]
+                                          },
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "type": {
+                                                "type": "string",
+                                                "const": "publish"
+                                              },
+                                              "edge": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "message": {
+                                                "type": "string",
+                                                "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                                              },
+                                              "optional": {
+                                                "type": "boolean"
+                                              }
+                                            },
+                                            "required": [
+                                              "type",
+                                              "edge"
+                                            ]
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "populate": {
+                                      "type": "boolean"
+                                    }
+                                  },
+                                  "required": [
+                                    "type",
+                                    "edge",
+                                    "onMiss"
+                                  ]
+                                }
+                              ]
+                            }
+                          },
+                          "populate": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "type",
+                          "edge",
+                          "onMiss"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "sql-database"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "readCapacity": {
+                    "default": 5000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  },
+                  "writeCapacity": {
+                    "default": 2000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "nosql-database"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "readCapacity": {
+                    "default": 20000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  },
+                  "writeCapacity": {
+                    "default": 10000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "object-storage"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "readCapacity": {
+                    "default": 50000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  },
+                  "writeCapacity": {
+                    "default": 10000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "redis-cache"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "hitRate": {
+                    "default": 0.8,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "capacityOps": {
+                    "default": 100000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "cdn"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "hitRate": {
+                    "default": 0.9,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "cacheableOperations": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9-]{0,39}$"
+                    }
+                  },
+                  "capacityRps": {
+                    "default": 1000000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "message-queue"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "enqueueCapacity": {
+                    "default": 50000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  },
+                  "maxDepth": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1000000000
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              "type": {
+                "type": "string",
+                "const": "event-stream"
+              },
+              "label": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 60
+              },
+              "config": {
+                "type": "object",
+                "properties": {
+                  "ingestCapacity": {
+                    "default": 100000,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100000000
+                  },
+                  "partitions": {
+                    "default": 8,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 1024
+                  }
+                }
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "label",
+              "config"
+            ]
+          }
+        ]
+      }
+    },
+    "edges": {
+      "maxItems": 400,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "source": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 60
+          }
+        },
+        "required": [
+          "id",
+          "source",
+          "target"
+        ]
+      }
+    },
+    "layout": {
+      "type": "object",
+      "propertyNames": {
+        "type": "string",
+        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+      },
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number",
+            "minimum": -1000000,
+            "maximum": 1000000
+          },
+          "y": {
+            "type": "number",
+            "minimum": -1000000,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "x",
+          "y"
+        ]
+      }
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 4096
+    },
+    "traffic": {
+      "type": "object",
+      "properties": {
+        "totalRps": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 10000000
+        },
+        "mix": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,39}$"
+          },
+          "additionalProperties": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "required": [
+        "totalRps"
+      ]
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "operations",
+    "nodes",
+    "edges",
+    "layout"
+  ]
+}

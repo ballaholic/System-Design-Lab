@@ -1,0 +1,327 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    {
+      "id": "feed",
+      "name": "Load feed",
+      "kind": "read",
+      "share": 20
+    },
+    {
+      "id": "post",
+      "name": "Publish post",
+      "kind": "write",
+      "share": 1
+    },
+    {
+      "id": "fanout",
+      "name": "Fan out post",
+      "kind": "write",
+      "share": 0
+    }
+  ],
+  "nodes": [
+    {
+      "id": "web",
+      "type": "web-client",
+      "label": "Web",
+      "config": {
+        "share": 2
+      }
+    },
+    {
+      "id": "mobile",
+      "type": "mobile-client",
+      "label": "Mobile",
+      "config": {
+        "share": 3,
+        "operations": ["feed"]
+      }
+    },
+    {
+      "id": "cdn",
+      "type": "cdn",
+      "label": "CDN",
+      "config": {
+        "hitRate": 0.5,
+        "cacheableOperations": ["feed"],
+        "capacityRps": 1000000
+      }
+    },
+    {
+      "id": "gw",
+      "type": "api-gateway",
+      "label": "Gateway",
+      "config": {
+        "capacityRps": 50000,
+        "rateLimitRps": 30000
+      }
+    },
+    {
+      "id": "lb",
+      "type": "load-balancer",
+      "label": "LB",
+      "config": {
+        "capacityRps": 50000
+      }
+    },
+    {
+      "id": "api",
+      "type": "api-server",
+      "label": "API",
+      "config": {
+        "instances": 3,
+        "capacityPerInstanceRps": 1500
+      },
+      "flows": {
+        "feed": [
+          {
+            "type": "cache-lookup",
+            "edge": "api-redis",
+            "populate": true,
+            "onMiss": [
+              {
+                "type": "call",
+                "edge": "api-nosql"
+              }
+            ]
+          }
+        ],
+        "post": [
+          {
+            "type": "call",
+            "edge": "api-sql"
+          },
+          {
+            "type": "call",
+            "edge": "api-blob",
+            "as": "write"
+          },
+          {
+            "type": "publish",
+            "edge": "api-stream",
+            "message": "fanout"
+          }
+        ]
+      }
+    },
+    {
+      "id": "worker",
+      "type": "background-worker",
+      "label": "Fan-out worker",
+      "config": {
+        "instances": 4,
+        "throughputPerInstance": 250
+      },
+      "flows": {
+        "fanout": [
+          {
+            "type": "call",
+            "edge": "worker-nosql",
+            "as": "write"
+          },
+          {
+            "type": "publish",
+            "edge": "worker-queue"
+          }
+        ]
+      }
+    },
+    {
+      "id": "notifier",
+      "type": "background-worker",
+      "label": "Notifier",
+      "config": {
+        "instances": 1,
+        "throughputPerInstance": 200
+      },
+      "flows": {
+        "fanout": []
+      }
+    },
+    {
+      "id": "sql",
+      "type": "sql-database",
+      "label": "Posts DB",
+      "config": {
+        "readCapacity": 5000,
+        "writeCapacity": 2000
+      }
+    },
+    {
+      "id": "nosql",
+      "type": "nosql-database",
+      "label": "Timelines",
+      "config": {
+        "readCapacity": 20000,
+        "writeCapacity": 10000
+      }
+    },
+    {
+      "id": "blob",
+      "type": "object-storage",
+      "label": "Media",
+      "config": {
+        "readCapacity": 50000,
+        "writeCapacity": 10000
+      }
+    },
+    {
+      "id": "redis",
+      "type": "redis-cache",
+      "label": "Feed cache",
+      "config": {
+        "hitRate": 0.9,
+        "capacityOps": 100000
+      }
+    },
+    {
+      "id": "stream",
+      "type": "event-stream",
+      "label": "Post events",
+      "config": {
+        "ingestCapacity": 100000,
+        "partitions": 8
+      }
+    },
+    {
+      "id": "queue",
+      "type": "message-queue",
+      "label": "Notifications",
+      "config": {
+        "enqueueCapacity": 50000,
+        "maxDepth": 1000000
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "web-cdn",
+      "source": "web",
+      "target": "cdn"
+    },
+    {
+      "id": "mobile-gw",
+      "source": "mobile",
+      "target": "gw"
+    },
+    {
+      "id": "cdn-gw",
+      "source": "cdn",
+      "target": "gw"
+    },
+    {
+      "id": "gw-lb",
+      "source": "gw",
+      "target": "lb"
+    },
+    {
+      "id": "lb-api",
+      "source": "lb",
+      "target": "api"
+    },
+    {
+      "id": "api-redis",
+      "source": "api",
+      "target": "redis"
+    },
+    {
+      "id": "api-nosql",
+      "source": "api",
+      "target": "nosql"
+    },
+    {
+      "id": "api-sql",
+      "source": "api",
+      "target": "sql"
+    },
+    {
+      "id": "api-blob",
+      "source": "api",
+      "target": "blob"
+    },
+    {
+      "id": "api-stream",
+      "source": "api",
+      "target": "stream"
+    },
+    {
+      "id": "stream-worker",
+      "source": "stream",
+      "target": "worker"
+    },
+    {
+      "id": "worker-nosql",
+      "source": "worker",
+      "target": "nosql"
+    },
+    {
+      "id": "worker-queue",
+      "source": "worker",
+      "target": "queue"
+    },
+    {
+      "id": "queue-notifier",
+      "source": "queue",
+      "target": "notifier"
+    }
+  ],
+  "layout": {
+    "web": {
+      "x": 0,
+      "y": 0
+    },
+    "mobile": {
+      "x": 0,
+      "y": 160
+    },
+    "cdn": {
+      "x": 200,
+      "y": 0
+    },
+    "gw": {
+      "x": 400,
+      "y": 80
+    },
+    "lb": {
+      "x": 600,
+      "y": 80
+    },
+    "api": {
+      "x": 800,
+      "y": 80
+    },
+    "worker": {
+      "x": 1200,
+      "y": 240
+    },
+    "notifier": {
+      "x": 1600,
+      "y": 240
+    },
+    "sql": {
+      "x": 1000,
+      "y": 80
+    },
+    "nosql": {
+      "x": 1000,
+      "y": -80
+    },
+    "blob": {
+      "x": 1000,
+      "y": 200
+    },
+    "redis": {
+      "x": 1000,
+      "y": -200
+    },
+    "stream": {
+      "x": 1000,
+      "y": 320
+    },
+    "queue": {
+      "x": 1400,
+      "y": 240
+    }
+  }
+}

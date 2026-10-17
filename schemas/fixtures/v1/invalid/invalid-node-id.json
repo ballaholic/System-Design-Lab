@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    {
+      "id": "read",
+      "name": "Read",
+      "kind": "read",
+      "share": 1
+    }
+  ],
+  "nodes": [
+    {
+      "id": "has spaces",
+      "type": "load-balancer",
+      "label": "LB",
+      "config": {}
+    }
+  ],
+  "edges": [],
+  "layout": {}
+}
