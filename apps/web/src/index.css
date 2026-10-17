@@ -302,6 +302,17 @@
   animation: sdl-badge-pop 420ms ease-out both;
 }
 
+/* The draggable ends of a selected connection: drag one to move that end to another side of its box. */
+.react-flow__edge.selected .react-flow__edgeupdater {
+  fill: var(--background);
+  stroke: var(--primary);
+  stroke-width: 2px;
+}
+.react-flow__edge .react-flow__edgeupdater:hover {
+  fill: color-mix(in oklab, var(--primary) 25%, transparent);
+  stroke: var(--primary);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sdl-pop-in,
   .sdl-slide-up,

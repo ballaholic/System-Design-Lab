@@ -203,6 +203,7 @@ React Flow ─────────────► editor store ────�
 - Guest attempts are stored like guest designs (`local-attempt-<uuid>`). The import sends them with the last batch of designs, linked by the design's import key.
 - Step suggestions for a service include every operation clients send, so accepting one doesn't hide the next.
 - Every component has a connection point on all four sides, so components can be stacked vertically. The canvas uses React Flow's loose connection mode: dragging from a component that sends requests makes it the source, and dragging from a store or cache makes it the target. The sides are saved in the document's `edgeLayout` (presentation only, ADR-015).
+- A connection may leave from the top, right or bottom and enter on any side. Left stays the "in" side, so direction reads at a glance. To move an end, select the connection and drag the end (a selected connection is drawn above the boxes so its ends can be grabbed), or pick the sides in the inspector. Dropping an end on a different component is refused: that would be a different connection, with its own flow steps.
 
 ### 5.3 Persistence and guest mode
 

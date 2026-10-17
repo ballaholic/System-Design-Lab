@@ -1,6 +1,8 @@
 import {
   CATALOG,
   checkConnection,
+  EDGE_SIDES,
+  edgeSides,
   flowUsages,
   isFlowNode,
   LIMITS,
@@ -301,6 +303,65 @@ function ConnectionsList({ node }: { node: ArchNode }) {
   );
 }
 
+const SIDE_LABEL = { top: "Top", right: "Right", bottom: "Bottom", left: "Left" } as const;
+
+/** Keyboard-friendly way to move either end of a connection, matching dragging an end on the canvas. */
+function EdgeSidesSection({ edge }: { edge: ArchEdge }) {
+  const store = useEditorStore();
+  const doc = useEditor((s) => s.doc);
+  const sides = edgeSides(doc, edge.id);
+  const sourceId = useId();
+  const targetId = useId();
+  const change = (end: "source" | "target", side: string) => {
+    const result = store.getState().setEdgeSides(edge.id, { [end]: side });
+    if (!result.ok) toast.error("Can't move the connection", { description: result.reason });
+  };
+  return (
+    <Section title="Sides">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="grid gap-1.5">
+          <Label htmlFor={sourceId} className="text-xs">
+            Leaves from
+          </Label>
+          <Select value={sides.source} onValueChange={(v) => change("source", v)}>
+            <SelectTrigger id={sourceId} size="sm" className="h-8 w-full text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {EDGE_SIDES.map((side) => (
+                <SelectItem key={side} value={side} disabled={side === "left"} className="text-xs">
+                  {SIDE_LABEL[side]}
+                  {side === "left" && <span className="text-muted-foreground"> (lines come in here)</span>}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="grid gap-1.5">
+          <Label htmlFor={targetId} className="text-xs">
+            Enters at
+          </Label>
+          <Select value={sides.target} onValueChange={(v) => change("target", v)}>
+            <SelectTrigger id={targetId} size="sm" className="h-8 w-full text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {EDGE_SIDES.map((side) => (
+                <SelectItem key={side} value={side} className="text-xs">
+                  {SIDE_LABEL[side]}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+      <p className="text-xs text-muted-foreground">
+        You can also drag either end of the line on the canvas to another side.
+      </p>
+    </Section>
+  );
+}
+
 function EdgeButton({ edgeId, children }: { edgeId: string; children: ReactNode }) {
   const store = useEditorStore();
   return (
@@ -384,6 +445,7 @@ function EdgeInspector({ edge }: { edge: ArchEdge }) {
           </p>
         </Section>
       )}
+      <EdgeSidesSection edge={edge} />
       <Section title="Label">
         <TextField
           label="Connection label (optional)"

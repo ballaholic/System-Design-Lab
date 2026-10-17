@@ -3,10 +3,13 @@ import {
   addNode,
   type ArchitectureDocument,
   checkConnection,
+  checkEdgeSides,
   type ComponentType,
   createNode,
   duplicateNodes,
   type EdgeId,
+  type EdgeSide,
+  edgeSides,
   type EdgeSides,
   type FlowStep,
   LIMITS,
@@ -21,11 +24,15 @@ import {
   setFlow,
   updateNode,
   validateArchitecture,
+  withEdgeSides,
   type TrafficProfile,
   type ValidationIssue,
 } from "@sdl/architecture";
 import { type Failure, type FailureScenario, normalizeScenario } from "@sdl/simulation";
 import { createStore } from "zustand/vanilla";
+
+/** Sides picked on the canvas or in the inspector, checked with checkEdgeSides before they're stored. */
+export type SideChoice = { source?: EdgeSide | undefined; target?: EdgeSide | undefined };
 
 export const HISTORY_LIMIT = 100;
 /** Edits with the same coalesce key within this window merge into one undo step (typing in a field). */
@@ -69,7 +76,9 @@ export interface EditorState {
 
   addComponent(type: ComponentType, position: Position): CommitResult<NodeId>;
   /** Connects two components; `sides` picks the sides of the boxes the line leaves and enters. */
-  connect(source: NodeId, target: NodeId, sides?: EdgeSides): CommitResult<EdgeId>;
+  connect(source: NodeId, target: NodeId, sides?: SideChoice): CommitResult<EdgeId>;
+  /** Moves either end of a connection to another side of its box. */
+  setEdgeSides(id: EdgeId, sides: SideChoice): CommitResult<EdgeId>;
   moveNodes(positions: Record<NodeId, Position>): void;
   renameNode(id: NodeId, label: string): void;
   setNodeConfig(id: NodeId, key: string, value: unknown): void;
@@ -182,16 +191,29 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
         const { doc } = get();
         const check = checkConnection(doc, source, target);
         if (!check.ok) return check;
+        const sideCheck = checkEdgeSides(sides);
+        if (!sideCheck.ok) return sideCheck;
         if (doc.edges.length >= LIMITS.edges) {
           return { ok: false, reason: `A design can have at most ${LIMITS.edges} connections.` };
         }
-        const { doc: next, edge } = addEdge(doc, source, target, undefined, sides);
+        const { doc: next, edge } = addEdge(doc, source, target, undefined, sides as EdgeSides);
         commit(() => next);
         set({
           selection: { nodeIds: [], edgeIds: [edge.id] },
           lastConnection: { edgeId: edge.id, source, target, at: now() },
         });
         return { ok: true, value: edge.id };
+      },
+
+      setEdgeSides: (id, sides) => {
+        const { doc } = get();
+        if (!doc.edges.some((e) => e.id === id))
+          return { ok: false, reason: "That connection no longer exists." };
+        const next = { ...edgeSides(doc, id), ...sides };
+        const check = checkEdgeSides(next);
+        if (!check.ok) return check;
+        commit((d) => withEdgeSides(d, id, next as EdgeSides));
+        return { ok: true, value: id };
       },
 
       moveNodes: (positions) =>

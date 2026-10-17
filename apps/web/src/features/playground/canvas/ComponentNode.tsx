@@ -49,8 +49,9 @@ function ComponentNodeView({ data, selected }: NodeProps<ComponentFlowNode>) {
   const def = CATALOG[node.type];
   const Icon = ICONS[def.icon];
   const role = def.role;
-  // A connection can start or end on any side (the canvas uses loose connection mode). Dragging from a box that
-  // sends requests makes it the source; stores and caches only receive, so dragging from one makes it the target.
+  // A connection can end on any side and start on any side but the left, where connections come in (the canvas
+  // uses loose connection mode). Dragging from a box that sends requests makes it the source; stores and caches
+  // only receive, so dragging from one makes it the target.
   const handleType = role === "store" || role === "cache" ? "target" : "source";
   const flash = useStatusFlashes(sim?.status);
 
@@ -119,6 +120,7 @@ function ComponentNodeView({ data, selected }: NodeProps<ComponentFlowNode>) {
           id={side}
           type={handleType}
           position={HANDLE_POSITION[side]}
+          isConnectableStart={handleType === "target" || side !== "left"}
           className={handleClass}
         />
       ))}

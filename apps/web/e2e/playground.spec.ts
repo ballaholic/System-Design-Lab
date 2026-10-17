@@ -90,6 +90,69 @@ test("connects a component to one placed under it, from bottom to top, and keeps
   await assertVertical();
 });
 
+/** Places an API server with a SQL database under it and connects them right to left. */
+async function stackedPair(page: Page) {
+  await dragOntoCanvas(page, "API server", { x: 400, y: 150 });
+  const pane = (await canvas(page).boundingBox())!;
+  const placed = (await node(page, "API server").boundingBox())!;
+  await dragOntoCanvas(page, "SQL database", {
+    x: placed.x - pane.x + placed.width / 2,
+    y: placed.y - pane.y + 250,
+  });
+  await connect(page, node(page, "API server"), node(page, "SQL database"));
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+}
+
+/** Drags one end of the selected connection onto a side of a component. A new connection starts selected. */
+async function dragEnd(page: Page, end: "source" | "target", to: Locator, side: Side) {
+  const anchor = (await page.locator(`.react-flow__edgeupdater-${end}`).boundingBox())!;
+  const target = (await to.locator(`.react-flow__handle-${side}`).boundingBox())!;
+  await page.mouse.move(anchor.x + anchor.width / 2, anchor.y + anchor.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 10 });
+  await page.mouse.up();
+}
+
+test("moves either end of a connection to another side by dragging it, but never out of the left side", async ({
+  page,
+}) => {
+  await stackedPair(page);
+  const server = node(page, "API server");
+  const database = node(page, "SQL database");
+
+  await dragEnd(page, "source", server, "bottom");
+  await dragEnd(page, "target", database, "top");
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+  const line = (await page.locator(".react-flow__edge-path").first().boundingBox())!;
+  const serverBox = (await server.boundingBox())!;
+  const databaseBox = (await database.boundingBox())!;
+  expect(Math.abs(line.y - (serverBox.y + serverBox.height))).toBeLessThan(8);
+  expect(Math.abs(line.y + line.height - databaseBox.y)).toBeLessThan(8);
+
+  await dragEnd(page, "source", server, "left");
+  await expect(page.getByText(/can't leave from the left side/)).toBeVisible();
+
+  await dragEnd(page, "target", page.locator(".react-flow__node").filter({ hasText: "API server" }), "top");
+  await expect(page.getByText(/draw a new connection/)).toBeVisible();
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+});
+
+test("moves the ends of a connection from the inspector", async ({ page }) => {
+  await stackedPair(page);
+  const inspector = page.getByRole("complementary", { name: "Inspector" });
+  await expect(inspector.getByRole("combobox", { name: "Leaves from" })).toHaveText("Right");
+
+  await inspector.getByRole("combobox", { name: "Leaves from" }).click();
+  await expect(page.getByRole("option", { name: /Left/ })).toBeDisabled();
+  await page.getByRole("option", { name: "Bottom" }).click();
+  await inspector.getByRole("combobox", { name: "Enters at" }).click();
+  await page.getByRole("option", { name: "Top" }).click();
+
+  const line = (await page.locator(".react-flow__edge-path").first().boundingBox())!;
+  const serverBox = (await node(page, "API server").boundingBox())!;
+  expect(Math.abs(line.y - (serverBox.y + serverBox.height))).toBeLessThan(8);
+});
+
 test("refuses an invalid connection and explains why", async ({ page }) => {
   await dragOntoCanvas(page, "Web client", { x: 300, y: 250 });
   await dragOntoCanvas(page, "SQL database", { x: 800, y: 250 });
