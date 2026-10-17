@@ -106,16 +106,16 @@ Testing Platform runner, and `dotnet test` only finds it from that folder.
   (list, rename, delete, duplicate). Autosave. Guest import on login (AUTH-9).
 - Text "outline" view of the architecture (accessibility alternative).
 
-**Acceptance criteria** (status 2026-10-17: implemented. Items marked *manual* need a check against the hosted Supabase project after `dotnet ef database update`.)
+**Acceptance criteria** (status 2026-10-17: complete. Manual checks passed against the hosted Supabase project.)
 - [x] Unit tests: schema round-trip, each validation rule (positive and negative), connection rules for every component pair class, migration framework with a dummy v0→v1. Coverage ≥ 90% on `@sdl/architecture`. *(277 tests, 98.7% statements.)*
 - [x] Every component type can be added by drag *and* by keyboard, configured, connected, duplicated, and deleted. *(Playwright e2e in a real browser plus component tests. All 13 types share the same catalog-driven code path; connection rules are tested for every type pair.)*
 - [x] Invalid connections (e.g. DB → client) are refused with an explanatory message. *(Unit + e2e.)*
 - [x] Undo/redo restores exact prior state for add, delete, connect, config edit, and move. One drag equals one undo step. *(Store tests + e2e.)*
-- [ ] A guest reloads the browser and the design is still there *(e2e ✓)*. After signing in, the guest design appears in "My designs" exactly once, even if import is triggered twice *(client and API idempotency tests ✓; manual)*.
-- [ ] Signed-in autosave: edit, wait for "Saved", hard reload, and the change persists. *(Autosave unit tests ✓; manual.)*
-- [ ] Two tabs editing the same design: the second save gets a conflict prompt. No silent overwrite. *(412 handling unit and API tests ✓; manual.)*
+- [x] A guest reloads the browser and the design is still there *(e2e ✓)*. After signing in, the guest design appears in "My designs" exactly once, even if import is triggered twice *(client and API idempotency tests ✓; manual ✓)*.
+- [x] Signed-in autosave: edit, wait for "Saved", hard reload, and the change persists. *(Autosave unit tests ✓; manual ✓.)*
+- [x] Two tabs editing the same design: the second save gets a conflict prompt. No silent overwrite. *(412 handling unit and API tests ✓; manual ✓.)*
 - [x] Integration tests: user B gets 404 on every `/api/architectures/{id}` route for user A's design; an oversized document (> 256 KB or > 150 nodes) returns 400 ProblemDetails; a schema-invalid document returns 400. *(Run in CI against PostgreSQL.)*
-- [ ] 100-node diagram drags smoothly (manual check on a mid-range laptop).
+- [x] 100-node diagram drags smoothly (manual check on a mid-range laptop) ✓.
 
 ## Phase 3 — Simulation and failure injection
 
