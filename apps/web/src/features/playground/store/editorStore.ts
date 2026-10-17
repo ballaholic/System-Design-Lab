@@ -52,6 +52,8 @@ export interface EditorState {
   lastCommit: { key: string; at: number } | null;
   /** Injected failures for simulation. Session only: not saved and not part of undo history. */
   scenario: FailureScenario;
+  /** The connection made most recently in this session, so the canvas can acknowledge it. Not history. */
+  lastConnection: { edgeId: EdgeId; source: NodeId; target: NodeId; at: number } | null;
 
   /** Replaces the document and clears history (loading a design). */
   load(doc: ArchitectureDocument): void;
@@ -139,6 +141,7 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
       revision: 0,
       lastCommit: null,
       scenario: NO_FAILURES,
+      lastConnection: null,
 
       load: (doc) =>
         set({
@@ -150,6 +153,7 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
           revision: 0,
           lastCommit: null,
           scenario: NO_FAILURES,
+          lastConnection: null,
         }),
       commit,
       undo: () => travel("past"),
@@ -181,7 +185,10 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
         }
         const { doc: next, edge } = addEdge(doc, source, target);
         commit(() => next);
-        set({ selection: { nodeIds: [], edgeIds: [edge.id] } });
+        set({
+          selection: { nodeIds: [], edgeIds: [edge.id] },
+          lastConnection: { edgeId: edge.id, source, target, at: now() },
+        });
         return { ok: true, value: edge.id };
       },
 

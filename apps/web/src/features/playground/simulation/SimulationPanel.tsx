@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePlaygroundUi } from "../playgroundUi";
+import { Celebration } from "./Celebration";
 import { ComponentsTab } from "./ComponentsTab";
 import { EventsTab } from "./EventsTab";
 import { FailureChips } from "./FailureControls";
@@ -22,6 +23,7 @@ export function SimulationPanel() {
   const liveId = useId();
   const { result } = sim;
   const blocking = result?.status === "invalid" ? result.issues.filter((i) => i.severity === "error") : [];
+  const allSucceed = result?.status === "ok" && result.summary.processingSuccessRate >= 0.9995;
   const eventCount = result?.status === "ok" ? result.events.filter((e) => e.kind !== "idle").length : 0;
 
   return (
@@ -72,6 +74,7 @@ export function SimulationPanel() {
 
       <div className="flex flex-wrap items-center gap-2 px-3 pt-2 empty:hidden">
         <FailureChips />
+        {sim.celebration > 0 && allSucceed && <Celebration key={sim.celebration} />}
         {sim.stale && result && (
           <span className="text-xs text-muted-foreground" aria-live="polite">
             {sim.live ? "Updating…" : "The design changed since this run. Run again to update."}

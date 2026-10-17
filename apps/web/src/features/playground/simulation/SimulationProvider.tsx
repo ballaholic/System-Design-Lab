@@ -7,6 +7,8 @@ import { trafficOf } from "./simulationUi";
 
 /** Live mode waits this long after the last edit before recomputing (typing in a field). */
 const LIVE_DEBOUNCE_MS = 200;
+/** Success rates at or above this count as "all requests succeed". */
+const ALL_SUCCEED = 0.9995;
 
 /**
  * Runs the engine in the browser (ARCHITECTURE §6.11): no network, so guests get the full simulator.
@@ -34,6 +36,24 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   }, [store]);
 
   const result = live ? liveResult : lastRun;
+
+  // Fixing a design (some requests failing → all succeed) is worth celebrating. Tracked during render
+  // ("adjust state during render"), so each fix counts once.
+  const successRate =
+    result?.status === "ok" && result.summary.offered > 0 ? result.summary.processingSuccessRate : null;
+  const [previousRate, setPreviousRate] = useState(successRate);
+  const [celebration, setCelebration] = useState(0);
+  if (successRate !== previousRate) {
+    setPreviousRate(successRate);
+    if (
+      previousRate !== null &&
+      previousRate < ALL_SUCCEED &&
+      successRate !== null &&
+      successRate >= ALL_SUCCEED
+    ) {
+      setCelebration((c) => c + 1);
+    }
+  }
   const stale = useMemo(
     () =>
       result !== null &&
@@ -44,7 +64,11 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
   const value = useMemo<SimulationView>(
     () => ({
       open,
-      setOpen,
+      setOpen: (next) => {
+        // A celebration belongs to the moment it happened; reopening the panel shouldn't replay it.
+        if (!next) setCelebration(0);
+        setOpen(next);
+      },
       live,
       setLive: (next) => {
         // Switching live off keeps the current result on show until the next run.
@@ -56,8 +80,9 @@ export function SimulationProvider({ children }: { children: ReactNode }) {
       run,
       tab,
       setTab,
+      celebration,
     }),
-    [open, live, liveResult, result, stale, run, tab],
+    [open, live, liveResult, result, stale, run, tab, celebration],
   );
 
   return <SimulationContext.Provider value={value}>{children}</SimulationContext.Provider>;

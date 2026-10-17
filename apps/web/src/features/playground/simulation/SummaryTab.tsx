@@ -1,6 +1,7 @@
 import { CATALOG } from "@sdl/architecture";
 import type { ValidSimulationResult } from "@sdl/simulation";
 import { type ReactNode, useId } from "react";
+import { useAnimatedNumber } from "@/lib/useAnimatedNumber";
 import { cn } from "@/lib/utils";
 import { useEditor } from "../store/editorContext";
 import { NodeLink } from "./NodeLink";
@@ -28,7 +29,7 @@ export function SummaryTab({ result }: { result: ValidSimulationResult }) {
               rate >= 0.999 ? "text-success" : rate >= 0.95 ? "text-warning" : "text-destructive",
             )}
           >
-            {summary.offered > 0 ? formatPct(rate) : "–"}
+            {summary.offered > 0 ? <AnimatedPercent value={rate} /> : "–"}
           </p>
           <p className="text-xs text-muted-foreground">
             {formatRate(summary.processingSucceeded)} of {formatRate(summary.offered)} requests/s
@@ -197,5 +198,16 @@ function Block({ title, children }: { title: string; children: ReactNode }) {
       </h3>
       {children}
     </section>
+  );
+}
+
+/** Counts up to the success rate, so a fix feels like one. Screen readers get the final value only. */
+function AnimatedPercent({ value }: { value: number }) {
+  const shown = useAnimatedNumber(value);
+  return (
+    <>
+      <span aria-hidden>{formatPct(shown)}</span>
+      <span className="sr-only">{formatPct(value)}</span>
+    </>
   );
 }

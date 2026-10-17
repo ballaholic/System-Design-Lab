@@ -32,6 +32,8 @@ export type ComponentNodeData = {
   issueLevel: IssueLevel;
   issueCount: number;
   sim?: NodeSimulation;
+  /** Set when a connection to or from this node was just made: a key that replays the pulse animation. */
+  pulse?: number;
 };
 export type ComponentFlowNode = Node<ComponentNodeData, "component">;
 
@@ -43,8 +45,16 @@ export type ConnectionEdgeData = {
   label?: string;
   issueLevel: IssueLevel;
   /** Simulated requests or messages per second, and the busiest connection's rate for scaling the width. */
-  sim?: { rate: number; maxRate: number };
+  sim?: { rate: number; maxRate: number; tone: TrafficTone };
+  /** Set when this connection was just made: a key that replays the draw animation. */
+  drawn?: number;
 };
+
+/** How traffic over a connection is faring, from the status of the component it goes to. */
+export type TrafficTone = "flow" | "warm" | "bad";
+
+/** A connection just made, to acknowledge on the canvas. */
+export type FreshConnection = { edgeId: EdgeId; source: NodeId; target: NodeId; at: number } | null;
 export type ConnectionFlowEdge = Edge<ConnectionEdgeData, "connection">;
 
 export type Measured = Map<NodeId, { width?: number; height?: number }>;
@@ -55,6 +65,7 @@ export function toFlowNodes(
   issues: readonly ValidationIssue[],
   measured: Measured = new Map(),
   sim: { result: ValidSimulationResult; scenario: FailureScenario } | null = null,
+  fresh: FreshConnection = null,
 ): ComponentFlowNode[] {
   const levels = issueLevels(issues, "nodeIds");
   const failed = new Set(sim?.scenario.failures.map((f) => f.nodeId));
@@ -72,6 +83,7 @@ export function toFlowNodes(
         issueLevel: level?.level ?? null,
         issueCount: level?.count ?? 0,
         ...(sim ? { sim: nodeSimulation(sim.result, node.id, failed.has(node.id)) } : {}),
+        ...(fresh && (fresh.source === node.id || fresh.target === node.id) ? { pulse: fresh.at } : {}),
       },
       ...(size ? { measured: size } : {}),
     };
@@ -83,6 +95,7 @@ export function toFlowEdges(
   selection: Selection,
   issues: readonly ValidationIssue[],
   sim: ValidSimulationResult | null = null,
+  fresh: FreshConnection = null,
 ): ConnectionFlowEdge[] {
   const levels = issueLevels(issues, "edgeIds");
   const maxRate = sim ? Math.max(0, ...Object.values(sim.edges)) : 0;
@@ -104,10 +117,16 @@ export function toFlowEdges(
         carries: [...(carries.get(edge.id) ?? [])].map((id) => names.get(id) ?? id),
         ...(edge.label ? { label: edge.label } : {}),
         issueLevel: levels.get(edge.id)?.level ?? null,
-        ...(sim ? { sim: { rate: sim.edges[edge.id] ?? 0, maxRate } } : {}),
+        ...(sim ? { sim: { rate: sim.edges[edge.id] ?? 0, maxRate, tone: toneOf(sim, edge.target) } } : {}),
+        ...(fresh?.edgeId === edge.id ? { drawn: fresh.at } : {}),
       },
     };
   });
+}
+
+function toneOf(result: ValidSimulationResult, target: NodeId): TrafficTone {
+  const status = result.nodes[target]?.status;
+  return status === "saturated" || status === "down" ? "bad" : status === "warm" ? "warm" : "flow";
 }
 
 function nodeSimulation(

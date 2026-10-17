@@ -149,6 +149,18 @@ describe("simulation panel", () => {
     expect(within(p).getByText(/Breaks at/)).toHaveTextContent("Breaks at 5,500 requests/s.");
   });
 
+  it("celebrates when a failing design gets every request through, once per fix", async () => {
+    const { s } = setup({ ...urlShortenerDesign(), traffic: { totalRps: 11_000 } });
+    const p = await openSimulation();
+    expect(within(p).queryByText("All requests succeed")).not.toBeInTheDocument();
+    s().setNodeConfig("db", "readCapacity", 20_000);
+    expect(await within(p).findByText("All requests succeed")).toBeInTheDocument();
+    // Closing and reopening doesn't replay it.
+    await userEvent.click(within(p).getByRole("button", { name: "Close simulation" }));
+    const reopened = await openSimulation();
+    expect(within(reopened).queryByText("All requests succeed")).not.toBeInTheDocument();
+  });
+
   it("closes from the panel", async () => {
     setup();
     const p = await openSimulation();

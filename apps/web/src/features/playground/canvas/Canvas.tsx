@@ -56,12 +56,19 @@ export function Canvas() {
   const measured = useRef<Measured>(new Map());
   const sim = useMemo(() => (overlay ? { result: overlay, scenario } : null), [overlay, scenario]);
   const [nodes, setNodes] = useState<ComponentFlowNode[]>(() => toFlowNodes(doc, selection, issues));
+  // A connection just made is acknowledged with a short animation, then forgotten so it never replays.
+  const fresh = useEditor((s) => s.lastConnection);
   useEffect(() => {
-    setNodes(toFlowNodes(doc, selection, issues, measured.current, sim));
-  }, [doc, selection, issues, sim]);
+    if (!fresh) return;
+    const timer = setTimeout(() => store.setState({ lastConnection: null }), 1500);
+    return () => clearTimeout(timer);
+  }, [fresh, store]);
+  useEffect(() => {
+    setNodes(toFlowNodes(doc, selection, issues, measured.current, sim, fresh));
+  }, [doc, selection, issues, sim, fresh]);
   const edges = useMemo(
-    () => toFlowEdges(doc, selection, issues, overlay),
-    [doc, selection, issues, overlay],
+    () => toFlowEdges(doc, selection, issues, overlay, fresh),
+    [doc, selection, issues, overlay, fresh],
   );
 
   const applySelection = useCallback(

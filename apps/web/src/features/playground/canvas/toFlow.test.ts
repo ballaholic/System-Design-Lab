@@ -97,7 +97,23 @@ describe("simulation overlay", () => {
     expect(byId.client).toEqual({ status: "ok", failed: false });
 
     const edges = toFlowEdges(doc, EMPTY_SELECTION, [], result);
-    expect(edges.find((e) => e.id === "lb-api")!.data!.sim).toEqual({ rate: 11_000, maxRate: 11_000 });
+    expect(edges.find((e) => e.id === "lb-api")!.data!.sim).toEqual({
+      rate: 11_000,
+      maxRate: 11_000,
+      tone: "flow",
+    });
+    // Traffic into the failed database is shown as failing.
+    expect(edges.find((e) => e.id === "api-db")!.data!.sim!.tone).toBe("bad");
     expect(toFlowEdges(doc, EMPTY_SELECTION, [])[0]!.data!.sim).toBeUndefined();
+  });
+
+  it("marks a connection just made and its two components so the canvas can acknowledge it", async () => {
+    const { urlShortenerDesign } = await import("../test/designs");
+    const doc = urlShortenerDesign();
+    const fresh = { edgeId: "lb-api", source: "lb", target: "api", at: 42 };
+    const nodes = toFlowNodes(doc, EMPTY_SELECTION, [], new Map(), null, fresh);
+    expect(nodes.filter((n) => n.data.pulse === 42).map((n) => n.id)).toEqual(["lb", "api"]);
+    const edges = toFlowEdges(doc, EMPTY_SELECTION, [], null, fresh);
+    expect(edges.filter((e) => e.data!.drawn === 42).map((e) => e.id)).toEqual(["lb-api"]);
   });
 });

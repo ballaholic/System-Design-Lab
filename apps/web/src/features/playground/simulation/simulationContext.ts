@@ -17,6 +17,8 @@ export interface SimulationView {
   run(): void;
   tab: SimulationTab;
   setTab(tab: SimulationTab): void;
+  /** Counts the times the design went from failing requests to all succeeding while the panel was open. */
+  celebration: number;
 }
 
 const closed: SimulationView = {
@@ -29,6 +31,7 @@ const closed: SimulationView = {
   run: () => {},
   tab: "summary",
   setTab: () => {},
+  celebration: 0,
 };
 
 export const SimulationContext = createContext<SimulationView>(closed);
