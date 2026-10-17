@@ -44,7 +44,7 @@
           "unit": "redirects/s",
           "expected": 116,
           "tolerance": 0.3,
-          "workedSolution": "1 million links are created per day and each is followed 10 times as often, so there are **10 million redirects per day**.\n\nA day has 86,400 seconds: 10,000,000 / 86,400 ≈ **116 redirects per second**. Creating links adds about 12 per second, so the total is around 128 requests per second.\n\nRound generously. Estimates are about the order of magnitude: 100 and 150 lead to the same design."
+          "workedSolution": "1 million links are created per day and links are followed 10 times as often, so there are **10 million redirects per day**.\n\nA day has 86,400 seconds: 10,000,000 / 86,400 ≈ **116 redirects per second**. Creating links adds 1,000,000 / 86,400 ≈ 12 per second, so the total is around 128 requests per second.\n\nAnother route: with 10 redirects for every create, redirects are 10 of every 11 requests, and 128 × 10 / 11 ≈ 116.\n\nA shortcut for mental math: a day is roughly 100,000 seconds, so 10 million per day is about 100 per second.\n\nRound generously. Estimates are about the order of magnitude: 100 and 150 lead to the same design."
         },
         {
           "kind": "estimate",
