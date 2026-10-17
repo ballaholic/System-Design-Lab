@@ -5,7 +5,7 @@ Throwaway experiments that validated architectural assumptions before Phase 1. S
 
 | Folder | Experiment | Status |
 |---|---|---|
-| [`simulation/`](simulation/) | A — request-flow simulation engine (TypeScript, Vitest) | Complete: 30 tests |
+| `simulation/` (removed) | A — request-flow simulation engine (TypeScript, Vitest) | Promoted to `packages/simulation` in Phase 3; its 30 tests are the regression baseline in `packages/simulation/test/engine.test.ts` |
 | [`auth-spike/`](auth-spike/) | B — Supabase JWT validation in ASP.NET Core (.NET 10, xUnit v3) | Complete: 16 offline tests + live Supabase test passed (2026-10-17) |
 
 Rules:
