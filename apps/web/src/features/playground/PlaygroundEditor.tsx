@@ -28,6 +28,9 @@ import { type PlaygroundView, Toolbar } from "./toolbar/Toolbar";
 import { useEditorShortcuts } from "./useEditorShortcuts";
 import { IssuesPanel } from "./validation/IssuesPanel";
 import { issueCounts } from "./validation/issueCounts";
+import { type MentorLink, MentorPanel } from "../mentor/MentorPanel";
+
+const NO_LINK: MentorLink = { architectureId: null, attemptId: null, interview: false };
 
 const wide = () =>
   typeof window === "undefined" || window.matchMedia?.("(min-width: 1024px)").matches !== false;
@@ -36,6 +39,8 @@ interface EditorProps {
   persistence: Persistence;
   /** Challenge workspace: the requirements, exercises and criteria, shown as the first inspector tab. */
   challengePanel?: ReactNode;
+  /** What mentor conversations link to. Without it the Mentor tab works unlinked (or asks guests to sign in). */
+  mentor?: MentorLink;
 }
 
 export function PlaygroundEditor(props: EditorProps) {
@@ -46,7 +51,7 @@ export function PlaygroundEditor(props: EditorProps) {
   );
 }
 
-function EditorLayout({ persistence, challengePanel }: EditorProps) {
+function EditorLayout({ persistence, challengePanel, mentor = NO_LINK }: EditorProps) {
   const store = useEditorStore();
   const simulation = useSimulation();
   const issues = useEditor((s) => s.issues);
@@ -55,7 +60,7 @@ function EditorLayout({ persistence, challengePanel }: EditorProps) {
   const [view, setView] = useState<PlaygroundView>("diagram");
   const [libraryOpen, setLibraryOpen] = useState(wide);
   const [inspectorOpen, setInspectorOpen] = useState(wide);
-  const [panel, setPanel] = useState(challengePanel ? "challenge" : "inspect");
+  const [panel, setPanel] = useState(mentor.interview ? "mentor" : challengePanel ? "challenge" : "inspect");
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
   const { errors, warnings } = issueCounts(issues);
 
@@ -160,7 +165,7 @@ function EditorLayout({ persistence, challengePanel }: EditorProps) {
             >
               <Tabs value={panel} onValueChange={setPanel} className="flex min-h-0 flex-1 flex-col gap-0">
                 <TabsList
-                  className={cn("mx-3 mt-2 grid w-auto", challengePanel ? "grid-cols-3" : "grid-cols-2")}
+                  className={cn("mx-3 mt-2 grid w-auto", challengePanel ? "grid-cols-4" : "grid-cols-3")}
                 >
                   {challengePanel && <TabsTrigger value="challenge">Challenge</TabsTrigger>}
                   <TabsTrigger value="inspect">Inspect</TabsTrigger>
@@ -181,7 +186,11 @@ function EditorLayout({ persistence, challengePanel }: EditorProps) {
                       </span>
                     )}
                   </TabsTrigger>
+                  <TabsTrigger value="mentor">Mentor</TabsTrigger>
                 </TabsList>
+                <TabsContent value="mentor" className="flex min-h-0 flex-1 flex-col">
+                  <MentorPanel link={mentor} />
+                </TabsContent>
                 {challengePanel && (
                   <TabsContent value="challenge" className="min-h-0 flex-1 overflow-y-auto">
                     {challengePanel}

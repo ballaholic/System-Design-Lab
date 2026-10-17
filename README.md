@@ -3,8 +3,8 @@
 An interactive playground for learning system design: build architectures, simulate traffic and failures,
 and get feedback from an AI mentor.
 
-> Status: **Phase 4 (challenges)**: the playground, the request-flow simulator with failure injection, and
-> the URL Shortener challenge in Guided mode with saved progress. See the
+> Status: **Phase 5 (AI mentor)**: the playground, the request-flow simulator with failure injection, the URL
+> Shortener challenge in Guided and Interview modes, and the AI mentor (Tutor, Reviewer, Interviewer). See the
 > [implementation plan](docs/IMPLEMENTATION_PLAN.md).
 
 ## Repository layout
@@ -48,8 +48,9 @@ and get feedback from an AI mentor.
 3. **Web app environment**: copy `apps/web/.env.example` to `apps/web/.env.local` and fill in the project
    URL and **publishable** key.
 
-4. **API secrets**: see [server/README.md](server/README.md#configuration). This covers the project URL and
-   the database connection string, stored with `dotnet user-secrets`, never in files.
+4. **API secrets**: see [server/README.md](server/README.md#configuration). This covers the project URL, the
+   database connection string and, for the AI mentor, the Anthropic API key, stored with `dotnet user-secrets`,
+   never in files.
 
 5. **Create or update the database schema** (once, and after pulling a new migration):
 
@@ -75,7 +76,9 @@ pnpm --filter @sdl/simulation bench   # engine performance budget: 150 nodes < 5
 
 The JSON Schemas in `schemas/` are generated: after changing a schema, run
 `pnpm --filter @sdl/architecture schema` or `pnpm --filter @sdl/challenges schema` (a test fails if a
-committed file is stale). The challenge content check runs with `pnpm --filter @sdl/challenges test`.
+committed file is stale). The challenge content check runs with `pnpm --filter @sdl/challenges test`. The
+mentor's capability summary and sample context are generated the same way:
+`pnpm --filter @sdl/simulation mentor-files`.
 
 CI (`.github/workflows/ci.yml`) runs the same checks, plus the database tests against PostgreSQL via
 Testcontainers, on every pull request.

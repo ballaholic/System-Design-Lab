@@ -78,19 +78,20 @@ public static class AttemptsEndpoints
     private static async Task<Results<Created<AttemptResponse>, ValidationProblem, ProblemHttpResult>> Create(
         CreateAttemptRequest request, CurrentUser user, AppDbContext db, ChallengeCatalog catalog, TimeProvider clock, CancellationToken ct)
     {
-        if (request.Mode == AttemptModes.Interview)
+        // Interview mode is the AI interviewer, which needs a verified email (PRD CH-8).
+        if (request.Mode == AttemptModes.Interview && user.EmailVerified != true)
         {
             return TypedResults.Problem(
-                statusCode: StatusCodes.Status400BadRequest,
-                title: "Interview mode isn't available yet.",
-                detail: "Interview mode arrives with the AI mentor.",
-                type: ProblemTypes.Validation);
+                statusCode: StatusCodes.Status403Forbidden,
+                title: "Verify your email to use Interview mode.",
+                detail: "Interview mode uses the AI mentor, which needs a verified email.",
+                type: ProblemTypes.EmailNotVerified);
         }
 
         var errors = new Dictionary<string, string[]>();
         var challenge = request.ChallengeSlug is null ? null : catalog.Find(request.ChallengeSlug);
         if (challenge is null) errors["challengeSlug"] = ["Unknown challenge."];
-        if (request.Mode != AttemptModes.Guided) errors["mode"] = ["Mode must be \"guided\"."];
+        if (request.Mode is not (AttemptModes.Guided or AttemptModes.Interview)) errors["mode"] = ["Mode must be \"guided\" or \"interview\"."];
         if (request.ArchitectureId is { } architectureId && !await OwnsArchitecture(db, user.Id, architectureId, ct))
             errors["architectureId"] = ["Design not found."];
         if (errors.Count > 0) return Invalid(errors, "The attempt is invalid.");
@@ -113,7 +114,7 @@ public static class AttemptsEndpoints
             UserId = user.Id,
             ChallengeSlug = challenge!.Slug,
             ChallengeVersion = challenge.Version,
-            Mode = AttemptModes.Guided,
+            Mode = request.Mode!,
             Status = AttemptStatuses.InProgress,
             CurrentStageId = challenge.StageIds[0],
             ArchitectureId = request.ArchitectureId,

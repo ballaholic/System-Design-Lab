@@ -15,4 +15,14 @@ describe("Markdown", () => {
     expect(container.querySelector("b")).toBeNull();
     expect(container).toHaveTextContent("Last <b>raw</b>");
   });
+
+  it("renders numbered lists", () => {
+    render(<Markdown>{"Steps:\n\n1. Add a cache\n2) Raise the hit rate"}</Markdown>);
+    const list = screen.getByRole("list");
+    expect(list.tagName).toBe("OL");
+    expect(screen.getAllByRole("listitem").map((li) => li.textContent)).toEqual([
+      "Add a cache",
+      "Raise the hit rate",
+    ]);
+  });
 });

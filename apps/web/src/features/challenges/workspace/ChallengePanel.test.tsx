@@ -156,4 +156,16 @@ describe("ChallengePanel", () => {
     expect(screen.getByText(/Simple and hard to guess/)).toBeInTheDocument();
     expect(screen.getByText("Recommended")).toBeInTheDocument();
   });
+
+  it("hides hints and worked solutions in Interview mode, pointing to the interviewer", async () => {
+    const attempt: Attempt = { ...createGuestAttempt(challenge, "local-d"), mode: "interview" };
+    setup(starterDocument(challenge), attempt);
+    expect(screen.queryByRole("button", { name: /Show hint/ })).not.toBeInTheDocument();
+    expect(screen.getByText(/Interview mode: hints and worked solutions are hidden/)).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Your estimate (GB)"), "5000");
+    await userEvent.click(screen.getAllByRole("button", { name: "Check" })[1]!);
+    expect(screen.getByText(/Not quite \(1 attempt\)\. Try again\./)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Show the worked solution" })).not.toBeInTheDocument();
+  });
 });

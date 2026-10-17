@@ -1,6 +1,7 @@
 using SystemDesignLab.Api.Features.Architectures;
 using SystemDesignLab.Api.Features.Attempts;
 using SystemDesignLab.Api.Features.Challenges;
+using SystemDesignLab.Api.Features.Mentor;
 using SystemDesignLab.Api.Features.Users;
 using SystemDesignLab.Api.Infrastructure.Auth;
 using SystemDesignLab.Api.Infrastructure.Persistence;
@@ -20,6 +21,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddUsersFeature();
 builder.Services.AddArchitecturesFeature();
 builder.Services.AddChallengesFeature(builder.Configuration);
+builder.Services.AddMentorFeature(builder.Configuration);
 
 var app = builder.Build();
 
@@ -51,6 +53,7 @@ var api = app.MapGroup("/api")
 api.MapUsersEndpoints();
 api.MapArchitecturesEndpoints();
 api.MapAttemptsEndpoints();
+api.MapMentorEndpoints();
 
 app.MapChallengesEndpoints();
 

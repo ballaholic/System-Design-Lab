@@ -35,6 +35,8 @@ export type ComponentNodeData = {
   sim?: NodeSimulation;
   /** Set when a connection to or from this node was just made: a key that replays the pulse animation. */
   pulse?: number;
+  /** Pointed out from elsewhere, e.g. an AI review finding. */
+  highlighted?: boolean;
 };
 export type ComponentFlowNode = Node<ComponentNodeData, "component">;
 
@@ -67,6 +69,7 @@ export function toFlowNodes(
   measured: Measured = new Map(),
   sim: { result: ValidSimulationResult; scenario: FailureScenario } | null = null,
   fresh: FreshConnection = null,
+  highlight: readonly NodeId[] = [],
 ): ComponentFlowNode[] {
   const levels = issueLevels(issues, "nodeIds");
   const failed = new Set(sim?.scenario.failures.map((f) => f.nodeId));
@@ -85,6 +88,7 @@ export function toFlowNodes(
         issueCount: level?.count ?? 0,
         ...(sim ? { sim: nodeSimulation(sim.result, node.id, failed.has(node.id)) } : {}),
         ...(fresh && (fresh.source === node.id || fresh.target === node.id) ? { pulse: fresh.at } : {}),
+        ...(highlight.includes(node.id) ? { highlighted: true } : {}),
       },
       ...(size ? { measured: size } : {}),
     };

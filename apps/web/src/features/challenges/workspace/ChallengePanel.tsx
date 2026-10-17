@@ -33,6 +33,7 @@ export function ChallengePanel({ challenge, attempt, update, saveCheckpoint }: P
   const isLast = stageIndex === challenge.stages.length - 1;
   const passedAt = attempt.stageResults[stage.id]?.passedAt;
   const completed = attempt.status === "completed";
+  const interview = attempt.mode === "interview";
   const { results, passed } = useStageEvaluation(challenge, stageIndex, attempt.exerciseAnswers);
   const [checkpoint, setCheckpoint] = useState<{ stageId: string; saved: boolean } | null>(null);
   const [dismissed, setDismissed] = useState<string | null>(null);
@@ -135,20 +136,28 @@ export function ChallengePanel({ challenge, attempt, update, saveCheckpoint }: P
                 exercise={e}
                 answer={attempt.exerciseAnswers[e.id]}
                 onAnswer={(value) => answer(e.id, value)}
+                solutions={!interview}
               />
             ))}
           </div>
         </Section>
       )}
 
-      {stage.hints.length > 0 && (
-        <Section title="Hints">
-          <Hints
-            hints={stage.hints}
-            revealed={attempt.hintsRevealed}
-            onReveal={(id) => update((a) => ({ hintsRevealed: [...a.hintsRevealed, id] }))}
-          />
-        </Section>
+      {interview ? (
+        <p className="rounded-md border border-dashed p-3 text-xs text-muted-foreground">
+          Interview mode: hints and worked solutions are hidden. Talk your design through with the interviewer
+          in the Mentor tab.
+        </p>
+      ) : (
+        stage.hints.length > 0 && (
+          <Section title="Hints">
+            <Hints
+              hints={stage.hints}
+              revealed={attempt.hintsRevealed}
+              onReveal={(id) => update((a) => ({ hintsRevealed: [...a.hintsRevealed, id] }))}
+            />
+          </Section>
+        )
       )}
 
       <Section title="Requirements">

@@ -31,6 +31,9 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      # The Anthropic key lives only on the API (ARCHITECTURE §1). Fail if anything key-shaped reaches the bundle.
+      - name: No Anthropic key in the frontend bundle
+        run: "! grep -rIl 'sk-ant-' apps/web/dist"
       # Performance budget (150 nodes < 5 ms, 50-point sweep < 100 ms). Shared runners vary, so a miss
       # is reported but doesn't fail the build; the budget is checked locally before release.
       - name: Simulation benchmark (informational)

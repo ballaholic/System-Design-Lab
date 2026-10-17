@@ -429,5 +429,6 @@ statements (one per counter, in one transaction). Zero rows updated means the bu
 | `GET /api/mentor/conversations?mode=&architectureId=` | user | List |
 | `POST /api/mentor/conversations` | verified user | Create |
 | `GET /api/mentor/conversations/{id}` | owner | Messages |
-| `POST /api/mentor/conversations/{id}/messages` | verified owner | Send; response is an SSE stream |
+| `PATCH /api/mentor/conversations/{id}` | owner | Rename, or move an interview to another step (`requirements`, `estimation`, `high-level-design`, `deep-dive`) |
+| `POST /api/mentor/conversations/{id}/messages` | verified owner | Send `{ content, architecture, simulation }`; the response is an SSE stream of `delta`, then `done` (the saved message and the budget left) or `error` |
 | `GET /api/mentor/quota` | user | Remaining daily budget |

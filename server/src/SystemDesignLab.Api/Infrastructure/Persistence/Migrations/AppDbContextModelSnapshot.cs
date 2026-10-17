@@ -228,6 +228,194 @@ namespace SystemDesignLab.Api.Infrastructure.Persistence.Migrations
                     b.ToTable("challenge_attempts", "app");
                 });
 
+            modelBuilder.Entity("SystemDesignLab.Api.Features.Mentor.AiConversation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid?>("ArchitectureId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("architecture_id");
+
+                    b.Property<Guid?>("AttemptId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("attempt_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Metadata")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("metadata");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("mode");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("character varying(80)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ai_conversations");
+
+                    b.HasIndex("ArchitectureId")
+                        .HasDatabaseName("ix_ai_conversations_architecture_id");
+
+                    b.HasIndex("AttemptId")
+                        .HasDatabaseName("ix_ai_conversations_attempt_id");
+
+                    b.HasIndex("UserId", "UpdatedAt")
+                        .IsDescending(false, true)
+                        .HasDatabaseName("ix_ai_conversations_user_id_updated_at");
+
+                    b.ToTable("ai_conversations", "app");
+                });
+
+            modelBuilder.Entity("SystemDesignLab.Api.Features.Mentor.AiMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<int?>("CacheReadTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("cache_read_tokens");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("content");
+
+                    b.Property<string>("ContextRef")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("context_ref");
+
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("conversation_id");
+
+                    b.Property<long?>("CostMicros")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cost_micros");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Findings")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("findings");
+
+                    b.Property<int?>("InputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("input_tokens");
+
+                    b.Property<string>("Model")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("model");
+
+                    b.Property<int?>("OutputTokens")
+                        .HasColumnType("integer")
+                        .HasColumnName("output_tokens");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("role");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("status");
+
+                    b.HasKey("Id")
+                        .HasName("pk_ai_messages");
+
+                    b.HasIndex("ConversationId", "CreatedAt")
+                        .HasDatabaseName("ix_ai_messages_conversation_id_created_at");
+
+                    b.ToTable("ai_messages", "app");
+                });
+
+            modelBuilder.Entity("SystemDesignLab.Api.Features.Mentor.AiSpendGlobalDaily", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date")
+                        .HasColumnName("day");
+
+                    b.Property<long>("CostMicros")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cost_micros");
+
+                    b.Property<long>("ReservedMicros")
+                        .HasColumnType("bigint")
+                        .HasColumnName("reserved_micros");
+
+                    b.HasKey("Day")
+                        .HasName("pk_ai_spend_global_daily");
+
+                    b.ToTable("ai_spend_global_daily", "app");
+                });
+
+            modelBuilder.Entity("SystemDesignLab.Api.Features.Mentor.AiUsageDaily", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("user_id");
+
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date")
+                        .HasColumnName("day");
+
+                    b.Property<long>("CacheReadTokens")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cache_read_tokens");
+
+                    b.Property<long>("CostMicros")
+                        .HasColumnType("bigint")
+                        .HasColumnName("cost_micros");
+
+                    b.Property<long>("InputTokens")
+                        .HasColumnType("bigint")
+                        .HasColumnName("input_tokens");
+
+                    b.Property<long>("OutputTokens")
+                        .HasColumnType("bigint")
+                        .HasColumnName("output_tokens");
+
+                    b.Property<int>("Requests")
+                        .HasColumnType("integer")
+                        .HasColumnName("requests");
+
+                    b.Property<long>("ReservedMicros")
+                        .HasColumnType("bigint")
+                        .HasColumnName("reserved_micros");
+
+                    b.HasKey("UserId", "Day")
+                        .HasName("pk_ai_usage_daily");
+
+                    b.ToTable("ai_usage_daily", "app");
+                });
+
             modelBuilder.Entity("SystemDesignLab.Api.Features.Users.UserProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -293,6 +481,48 @@ namespace SystemDesignLab.Api.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_challenge_attempts_user_profiles_user_id");
+                });
+
+            modelBuilder.Entity("SystemDesignLab.Api.Features.Mentor.AiConversation", b =>
+                {
+                    b.HasOne("SystemDesignLab.Api.Features.Architectures.Architecture", null)
+                        .WithMany()
+                        .HasForeignKey("ArchitectureId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_ai_conversations_architectures_architecture_id");
+
+                    b.HasOne("SystemDesignLab.Api.Features.Attempts.ChallengeAttempt", null)
+                        .WithMany()
+                        .HasForeignKey("AttemptId")
+                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasConstraintName("fk_ai_conversations_challenge_attempts_attempt_id");
+
+                    b.HasOne("SystemDesignLab.Api.Features.Users.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_ai_conversations_user_profiles_user_id");
+                });
+
+            modelBuilder.Entity("SystemDesignLab.Api.Features.Mentor.AiMessage", b =>
+                {
+                    b.HasOne("SystemDesignLab.Api.Features.Mentor.AiConversation", null)
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_ai_messages_ai_conversations_conversation_id");
+                });
+
+            modelBuilder.Entity("SystemDesignLab.Api.Features.Mentor.AiUsageDaily", b =>
+                {
+                    b.HasOne("SystemDesignLab.Api.Features.Users.UserProfile", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_ai_usage_daily_user_profiles_user_id");
                 });
 #pragma warning restore 612, 618
         }

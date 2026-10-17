@@ -66,6 +66,8 @@ Out of scope for the MVP: teams, instructors and classrooms, public sharing, and
 - Leaderboards or anything that needs tamper-proof progress (see DECISIONS ADR-010).
 - Mobile-optimised playground. The playground is desktop-first, and small screens get a read-only notice.
 - Payments and subscriptions.
+- Cost estimates for designs (an approximate monthly price per component as another way to compare designs).
+  Proposed during Phase 4 and deliberately left for after the MVP (decided 2026-10-18).
 - Internationalisation. Strings stay in English but shouldn't be hardcoded in ways that prevent i18n later.
 
 ## 4. Core user journeys

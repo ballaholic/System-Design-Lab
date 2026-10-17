@@ -183,7 +183,10 @@ function ServerSession({
           stale={serverVersion !== undefined && draft.baseVersion < serverVersion}
         />
       )}
-      <PlaygroundEditor persistence={persistence} />
+      <PlaygroundEditor
+        persistence={persistence}
+        mentor={{ architectureId: initial?.id ?? null, attemptId: null, interview: false }}
+      />
     </FullHeight>
   );
 }

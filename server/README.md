@@ -30,7 +30,11 @@ Secrets live in .NET user-secrets locally and in environment variables in deploy
 cd server/src/SystemDesignLab.Api
 dotnet user-secrets set "Supabase:ProjectUrl" "https://<project-ref>.supabase.co"
 dotnet user-secrets set "ConnectionStrings:Database" "<connection string>"
+dotnet user-secrets set "Mentor:ApiKey" "<Anthropic API key>"   # optional: the AI mentor
 ```
+
+**Anthropic API key (AI mentor):** create one in the Anthropic Console and store it only with the command above.
+Don't paste it into chat, issues or files. Without it the app works and the Mentor tab says the mentor is off.
 
 **Connection string:** in the Supabase dashboard, click **Connect** and use the **Session pooler**
 string (port 5432). The direct connection (`db.<ref>.supabase.co`) is IPv6-only on the free plan, and the
@@ -46,6 +50,24 @@ Host=aws-0-<region>.pooler.supabase.com;Port=5432;Database=postgres;Username=pos
 | `ConnectionStrings:Database` | PostgreSQL (the API owns schema `app`) | required when a request touches the database |
 | `Cors:AllowedOrigins` | Browser origins allowed to call the API | `http://localhost:5173` in Development |
 | `RateLimiting:PermitsPerMinute` | Global per-user (or per-IP) limit | 300 |
+| `Mentor:ApiKey` | Anthropic API key (secret) | unset: mentor off |
+| `Mentor:Enabled` | Kill switch, read live: editing appsettings takes effect without a restart | `true` |
+| `Mentor:UserDailyBudgetMicros` | Per-user daily AI budget in micro-dollars (500000 = $0.50) | 500000 |
+| `Mentor:GlobalDailyBudgetMicros` | Daily cap for all users together | 20000000 ($20) |
+| `Mentor:MessagesPerMinute` | Mentor messages per user per minute | 6 |
+| `Mentor:Modes:<mode>:Model`, `:Effort`, `:MaxTokens`, `:Thinking` | Per mode (`tutor`, `interviewer`, `reviewer`) | Haiku 5.5 for the Tutor, Sonnet 5.5 for the others |
+| `Mentor:Prices:<model>:Input`, `:Output`, `:CacheRead`, `:CacheWrite` | USD per million tokens, for cost accounting; keep in step with Anthropic's pricing | see `MentorOptions` |
+
+**Mentor evaluation set:** `server/tools/SystemDesignLab.MentorEval` runs about 20 fixed scenarios against the real
+API and checks properties such as "doesn't invent metrics" and "doesn't give away the solution". It costs money
+(well under $1 per run), so it isn't part of CI. From the repository root:
+
+```bash
+pnpm --filter @sdl/challenges mentor-evals              # regenerate evals/mentor/scenarios.json
+dotnet run --project server/tools/SystemDesignLab.MentorEval   # add -- --only <scenario-id> for one
+```
+
+The report is written to `evals/mentor/reports/` (not committed).
 
 ## Database migrations
 
@@ -57,7 +79,7 @@ dotnet ef migrations add <Name> --project server/src/SystemDesignLab.Api --outpu
 dotnet ef database update --project server/src/SystemDesignLab.Api
 ```
 
-After pulling a branch with a new migration (Phase 4 adds `AddChallengeAttemptsAndSnapshots`), run
+After pulling a branch with a new migration (Phase 4 adds `AddChallengeAttemptsAndSnapshots`, Phase 5 adds `AddAiMentor`), run
 `dotnet ef database update` again before starting the API.
 
 Every new table must enable row-level security in its migration (see `InitialCreate`). CI fails if the

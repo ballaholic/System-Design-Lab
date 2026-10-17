@@ -16,7 +16,8 @@ export interface Attempt {
   id: string;
   challengeSlug: string;
   challengeVersion: number;
-  mode: "guided";
+  /** Interview mode hides hints and is led by the AI interviewer (signed-in, verified users only). */
+  mode: "guided" | "interview";
   status: AttemptStatus;
   currentStageId: string;
   architectureId: string | null;
@@ -38,10 +39,15 @@ export const attemptsApi = {
   list: () => apiFetch<{ items: Attempt[] }>("/api/attempts"),
   get: (id: string) => apiFetch<Attempt>(`/api/attempts/${id}`),
   /** 409 with `attemptId` when one is in progress and `restart` isn't set. */
-  create: (input: { challengeSlug: string; architectureId: string; restart?: boolean }) =>
+  create: (input: {
+    challengeSlug: string;
+    architectureId: string;
+    restart?: boolean;
+    mode?: Attempt["mode"];
+  }) =>
     apiFetch<Attempt>("/api/attempts", {
       method: "POST",
-      body: JSON.stringify({ ...input, mode: "guided" }),
+      body: JSON.stringify({ mode: "guided", ...input }),
     }),
   update: (id: string, patch: AttemptPatch) =>
     apiFetch<Attempt>(`/api/attempts/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),

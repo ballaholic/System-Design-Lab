@@ -8,7 +8,8 @@ using Microsoft.IdentityModel.Protocols;
 namespace SystemDesignLab.Api.Tests.Infrastructure;
 
 /// <summary>The real API pipeline with test Supabase keys and a configurable database and rate limit.</summary>
-public class ApiFactory(string? connectionString = null, int permitsPerMinute = 10_000) : WebApplicationFactory<Program>
+public class ApiFactory(string? connectionString = null, int permitsPerMinute = 10_000, Action<IWebHostBuilder>? configure = null)
+    : WebApplicationFactory<Program>
 {
     public const string WebOrigin = "http://localhost:5173";
 
@@ -21,6 +22,7 @@ public class ApiFactory(string? connectionString = null, int permitsPerMinute = 
         builder.UseSetting("RateLimiting:PermitsPerMinute", permitsPerMinute.ToString(System.Globalization.CultureInfo.InvariantCulture));
         builder.UseSetting("Cors:AllowedOrigins:0", WebOrigin);
         builder.ConfigureTestServices(services => services.AddSingleton<IDocumentRetriever>(new TestTokens.JwksRetriever()));
+        configure?.Invoke(builder);
     }
 
     public HttpClient CreateClientFor(Guid userId, Dictionary<string, object>? userMetadata = null, string email = "learner@example.com")

@@ -117,6 +117,7 @@ function GuestSession(props: {
     <Workspace
       challenge={props.challenge}
       attempt={props.attempt}
+      architectureId={null}
       persistence={persistence}
       saveCheckpoint={saveCheckpoint}
     />
@@ -209,6 +210,7 @@ function ServerSession({
     <Workspace
       challenge={challenge}
       attempt={attempt}
+      architectureId={architecture.id}
       persistence={persistence}
       saveCheckpoint={saveCheckpoint}
     />
@@ -218,11 +220,14 @@ function ServerSession({
 function Workspace({
   challenge,
   attempt: initial,
+  architectureId,
   persistence,
   saveCheckpoint,
 }: {
   challenge: Challenge;
   attempt: Attempt;
+  /** The saved design on the server; null for a guest design kept in this browser. */
+  architectureId: string | null;
   persistence: Persistence;
   saveCheckpoint(label: string): Promise<boolean>;
 }) {
@@ -231,6 +236,12 @@ function Workspace({
     <FullHeight>
       <PlaygroundEditor
         persistence={persistence}
+        mentor={{
+          architectureId,
+          // Guest attempts live in this browser; the mentor needs an account anyway.
+          attemptId: isGuestAttemptId(attempt.id) ? null : attempt.id,
+          interview: attempt.mode === "interview",
+        }}
         challengePanel={
           <ChallengePanel
             challenge={challenge}

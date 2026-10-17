@@ -50,7 +50,7 @@ async function run(): Promise<GuestImportResult | null> {
     importKey: attemptImportKey(a.id),
     challengeSlug: a.challengeSlug,
     challengeVersion: a.challengeVersion,
-    mode: a.mode,
+    mode: "guided", // guest attempts are always Guided: Interview mode needs an account
     status: a.status,
     currentStageId: a.currentStageId,
     ...(a.architectureId && isGuestId(a.architectureId)

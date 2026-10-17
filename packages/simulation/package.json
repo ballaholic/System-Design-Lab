@@ -11,7 +11,8 @@
     "lint": "oxlint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
-    "bench": "vitest bench --run"
+    "bench": "vitest bench --run",
+    "mentor-files": "vitest run --config vitest.files.config.ts"
   },
   "dependencies": {
     "@sdl/architecture": "workspace:*"

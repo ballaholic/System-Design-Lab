@@ -18,6 +18,8 @@ interface ExerciseProps<E extends Exercise> {
   exercise: E;
   answer: ExerciseAnswer | undefined;
   onAnswer(answer: ExerciseAnswer): void;
+  /** Offer the worked solution after a wrong estimate. Off in Interview mode. */
+  solutions?: boolean;
 }
 
 export function ExerciseCard(props: ExerciseProps<Exercise>) {
@@ -43,7 +45,7 @@ export function ExerciseCard(props: ExerciseProps<Exercise>) {
 }
 
 /** Tolerance-based check (J1 step 4); the worked solution is offered after an attempt. */
-function Estimate({ exercise, answer, onAnswer }: ExerciseProps<EstimateExercise>) {
+function Estimate({ exercise, answer, onAnswer, solutions = true }: ExerciseProps<EstimateExercise>) {
   const id = useId();
   const previous = answer?.kind === "estimate" ? answer : undefined;
   const [text, setText] = useState(previous ? String(previous.value) : "");
@@ -104,10 +106,10 @@ function Estimate({ exercise, answer, onAnswer }: ExerciseProps<EstimateExercise
           )}
           {solved
             ? `Close enough: within ${Math.round(exercise.tolerance * 100)}% of ${exercise.expected.toLocaleString("en")} ${exercise.unit}.`
-            : `Not quite (${previous.attempts} attempt${previous.attempts === 1 ? "" : "s"}). Try again, or see how it's worked out.`}
+            : `Not quite (${previous.attempts} attempt${previous.attempts === 1 ? "" : "s"}). Try again${solutions ? ", or see how it's worked out" : ""}.`}
         </p>
       )}
-      {previous && !solved && !previous.revealed && (
+      {previous && !solved && !previous.revealed && solutions && (
         <Button
           size="sm"
           variant="ghost"
