@@ -15,7 +15,7 @@ export type LoadResult =
 
 /**
  * Loads a stored document: migrates it to the current version, repairs what can be repaired without guessing
- * (config fields reset to defaults, unknown components and orphaned layout dropped), then validates the schema.
+ * (config fields reset to defaults, unknown components and orphaned layout or connection sides dropped), then validates the schema.
  */
 export function loadArchitecture(raw: unknown, migrations: readonly Migration[] = MIGRATIONS): LoadResult {
   const migrated = migrateDocument(raw, migrations);
@@ -45,6 +45,10 @@ export function loadArchitecture(raw: unknown, migrations: readonly Migration[] 
       if (edges.length !== doc.edges.length)
         repairs.push("Removed connections to components that no longer exist.");
       doc.edges = edges;
+      if (doc.edgeLayout && typeof doc.edgeLayout === "object") {
+        const edgeIds = new Set(edges.map((e) => e.id));
+        doc.edgeLayout = Object.fromEntries(Object.entries(doc.edgeLayout).filter(([id]) => edgeIds.has(id)));
+      }
     }
     if (doc.layout && typeof doc.layout === "object") {
       doc.layout = Object.fromEntries(Object.entries(doc.layout).filter(([id]) => ids.has(id)));

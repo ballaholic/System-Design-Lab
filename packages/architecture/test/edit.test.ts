@@ -7,6 +7,7 @@ import {
   createId,
   createNode,
   duplicateNodes,
+  edgeSides,
   flowsOf,
   flowUsages,
   ID_PATTERN,
@@ -20,6 +21,7 @@ import {
   suggestSteps,
   updateNode,
   validateArchitecture,
+  withEdgeSides,
 } from "../src";
 import { call, doc, lookup, publish, validDesign } from "./builder";
 
@@ -77,6 +79,38 @@ describe("creating", () => {
     d = setFlow(d, "api", "read", null);
     expect(flows(d, "api")).toEqual({});
     expect(setFlow(d, "lb", "read", [])).toEqual(d); // not a flow node
+  });
+});
+
+describe("connection sides", () => {
+  const twoBoxes = () => doc().node("api", "api-server").node("db", "sql-database").build();
+
+  it("default to right and left, and only sides that differ are stored", () => {
+    const { doc: plain } = addEdge(twoBoxes(), "api", "db", "e1");
+    expect(plain).not.toHaveProperty("edgeLayout");
+    expect(edgeSides(plain, "e1")).toEqual({ source: "right", target: "left" });
+
+    const { doc: stacked } = addEdge(twoBoxes(), "api", "db", "e1", { source: "bottom", target: "top" });
+    expect(stacked.edgeLayout).toEqual({ e1: { source: "bottom", target: "top" } });
+    expect(edgeSides(stacked, "e1")).toEqual({ source: "bottom", target: "top" });
+    expect(ArchitectureDocumentSchema.safeParse(stacked).success).toBe(true);
+
+    const { doc: half } = addEdge(twoBoxes(), "api", "db", "e1", { source: "right", target: "top" });
+    expect(half.edgeLayout).toEqual({ e1: { target: "top" } });
+    expect(withEdgeSides(half, "e1", { source: "right", target: "left" })).not.toHaveProperty("edgeLayout");
+  });
+
+  it("are removed with their connection and copied with duplicates", () => {
+    const base = doc().node("api", "api-server").node("db", "sql-database").node("c", "redis-cache").build();
+    let d = addEdge(base, "api", "db", "e1", { source: "bottom", target: "top" }).doc;
+    d = addEdge(d, "api", "c", "e2", { target: "bottom" }).doc;
+
+    expect(removeEdges(d, ["e1"]).edgeLayout).toEqual({ e2: { target: "bottom" } });
+    expect(removeNodes(d, ["api"])).not.toHaveProperty("edgeLayout");
+
+    const copy = duplicateNodes(d, ["api", "db"]);
+    const copied = copy.doc.edges.find((e) => e.source === copy.nodeIds[0] && e.target === copy.nodeIds[1])!;
+    expect(edgeSides(copy.doc, copied.id)).toEqual({ source: "bottom", target: "top" });
   });
 });
 

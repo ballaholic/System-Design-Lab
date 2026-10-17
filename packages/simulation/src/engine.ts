@@ -146,13 +146,13 @@ function sweepPoint(model: Model, traffic: TrafficProfile): SweepPoint {
   };
 }
 
-/** Hash of everything that affects a result: the document without layout and notes, traffic and scenario. */
+/** Hash of everything that affects a result: the document without layout, connection sides and notes, traffic and scenario. */
 export function simulationInputHash(
   doc: ArchitectureDocument,
   traffic: TrafficProfile,
   scenario: FailureScenario = { failures: [] },
 ): string {
-  const { layout: _layout, notes: _notes, traffic: _saved, ...model } = doc;
+  const { layout: _layout, edgeLayout: _sides, notes: _notes, traffic: _saved, ...model } = doc;
   return hash64(canonicalJson({ engine: ENGINE_VERSION, model, traffic, scenario }));
 }
 

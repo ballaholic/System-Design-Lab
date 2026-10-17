@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "operations": [
+    {
+      "id": "read",
+      "name": "Read",
+      "kind": "read",
+      "share": 1
+    }
+  ],
+  "nodes": [
+    {
+      "id": "api",
+      "type": "api-server",
+      "label": "API server",
+      "config": {
+        "instances": 2,
+        "capacityPerInstanceRps": 1000
+      }
+    },
+    {
+      "id": "db",
+      "type": "sql-database",
+      "label": "SQL database",
+      "config": {
+        "readCapacity": 5000,
+        "writeCapacity": 2000
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "api-db",
+      "source": "api",
+      "target": "db"
+    }
+  ],
+  "layout": {
+    "api": {
+      "x": 0,
+      "y": 0
+    },
+    "db": {
+      "x": 0,
+      "y": 200
+    }
+  },
+  "edgeLayout": {
+    "api-db": {
+      "source": "middle"
+    }
+  }
+}

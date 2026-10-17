@@ -119,6 +119,17 @@ describe("loadArchitecture", () => {
     ]);
   });
 
+  it("drops connection sides of connections that no longer exist", () => {
+    const d = {
+      ...validDesign().build(),
+      edgeLayout: { "api-db": { source: "bottom", target: "top" }, gone: { source: "top" } },
+    };
+    const loaded = loadArchitecture(d);
+    if (!loaded.ok) throw new Error(loaded.error);
+    expect(loaded.document.edgeLayout).toEqual({ "api-db": { source: "bottom", target: "top" } });
+    expect(loaded.repairs).toEqual([]);
+  });
+
   it("reports schema errors with a path", () => {
     const d = { ...createEmptyDocument(), operations: [] };
     expect(loadArchitecture(d)).toEqual({ ok: false, error: expect.stringContaining("operations") });
