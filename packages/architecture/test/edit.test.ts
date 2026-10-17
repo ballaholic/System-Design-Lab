@@ -241,6 +241,17 @@ describe("suggestSteps", () => {
     });
   });
 
+  it("keeps offering client operations a service doesn't handle yet, so accepting one doesn't hide the next", () => {
+    const d = doc()
+      .node("api", "api-server", { flows: { read: [call("api-db")] } })
+      .node("db", "sql-database")
+      .edge("api", "db")
+      .build();
+    d.operations.push({ id: "notify", name: "Notify", kind: "write", share: 0 });
+    // "write" is still offered; the message-only "notify" isn't, because clients never send it.
+    expect(suggestSteps(d, "api-db").map((x) => x.operation)).toEqual(["write"]);
+  });
+
   it("a worker gets suggestions only for messages it handles", () => {
     const d = doc()
       .node("w", "background-worker", { flows: { write: [] } })

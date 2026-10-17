@@ -269,10 +269,11 @@ export function suggestSteps(doc: ArchitectureDocument, edgeId: EdgeId): StepSug
 
   const flows = flowsOf(source);
   const role = roleOf(target.type);
-  // A worker handles the messages it consumes; a service handles operations routed to it, or any when it has none yet.
+  // A worker only handles the messages it consumes. A service may handle any operation clients send, so it's
+  // offered those too: adding a step for one operation must not hide the suggestion for the next.
   const handled = Object.keys(flows);
-  const operations = doc.operations.filter((o) =>
-    handled.length > 0 ? handled.includes(o.id) : roleOf(source.type) === "service" && o.share > 0,
+  const operations = doc.operations.filter(
+    (o) => handled.includes(o.id) || (roleOf(source.type) === "service" && o.share > 0),
   );
 
   const suggestions: StepSuggestion[] = [];
