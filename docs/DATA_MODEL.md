@@ -150,8 +150,11 @@ type NodeResult = {
   }>>;
   byOperation: Record<OperationId, { offered: number; admitted: number }>;
   rateLimited?: number;                          // gateways
-  cache?: { lookups: number; hits: number; misses: number; effectiveHitRate: number; otherOps: number };
-  queue?: { inflow: number; consumed: number; backlogGrowthPerSec: number; secondsToFull?: number };
+  cache?: { lookups: number; hits: number; misses: number; effectiveHitRate: number; otherOps: number;
+            populateOffered: number; populateAdmitted: number };   // caches and CDNs
+  queue?: { kind: "queue" | "stream"; inflow: number; accepted: number; consumed: number;
+            backlogGrowthPerSec: number; consumerGroups: number; secondsToFull?: number };   // queues and streams
+  headroom?: number;                             // min capacity / offered over resources
   explanation: string[];                         // engine-generated "why" lines
 };
 
@@ -160,19 +163,20 @@ type OperationOutcome = {
   accepted: number;                              // admitted by the entry node
   processingSucceeded: number;                   // synchronous flow completed (required steps)
   processingSuccessRate: number;                 // processingSucceeded / offered
-  publications: Array<{ step: string; queueId: NodeId; attempted: number; published: number }>;
+  publications: Array<{ nodeId: NodeId; operation: OperationId; stepPath: number[];
+                        brokerId: NodeId; message: OperationId; attempted: number; published: number }>;
 };
 
 type DeliveryOutcome = {                         // per (queue|stream, consumer)
   brokerId: NodeId; consumerId: NodeId; message: OperationId;
   inflow: number; consumed: number; backlogGrowthPerSec: number;
-  consumerSuccessRate: number;                   // of consumed messages
+  consumerSuccessRate: number | null;            // of consumed messages; null when nothing is consumed
 };
 
 type SimulationResult = {
   engineVersion: string;                         // semver of @sdl/simulation
   inputHash: string;                             // hash(doc minus layout, traffic, scenario)
-  status: "ok" | "invalid";
+  status: "ok" | "invalid";                      // "invalid" results carry only the fields above and issues/assumptions
   issues: ValidationIssue[];
   nodes: Record<NodeId, NodeResult>;
   edges: Record<EdgeId, number>;                 // rps/msg-s flowing over each edge
@@ -189,7 +193,12 @@ type SimulationResult = {
   assumptions: AssumptionId[];
 };
 
-type SweepResult = { points: Array<{ rps: number; processingSuccessRate: number; firstSaturated?: NodeId }> };
+type SweepResult = {
+  status: "ok" | "invalid"; engineVersion: string; inputHash: string; issues: ValidationIssue[];
+  breakingPointRps: number | null;
+  points: Array<{ rps: number; processingSuccessRate: number; operations: Record<OperationId, number>;
+                  firstSaturated?: { nodeId: NodeId; resource: Resource } }>;
+};
 ```
 
 ## 3. Challenge definition (`@sdl/challenges`, files in `content/challenges/*`)

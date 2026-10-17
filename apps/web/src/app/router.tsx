@@ -31,6 +31,12 @@ export const router = createBrowserRouter([
           },
           { path: "designs", element: <DesignsPage /> },
           {
+            path: "docs/simulator",
+            lazy: async () => ({
+              Component: (await import("@/features/docs/SimulatorDocsPage")).SimulatorDocsPage,
+            }),
+          },
+          {
             path: "profile",
             element: (
               <RequireAuth>

@@ -14,6 +14,7 @@ export function renderEditor(ui: ReactElement, doc: ArchitectureDocument = creat
     requestDelete: vi.fn(),
     duplicate: vi.fn(),
     focusNode: vi.fn(),
+    showIssues: vi.fn(),
     save: vi.fn(),
   };
   const result = render(

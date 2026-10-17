@@ -5,7 +5,8 @@ import { type DragEvent, useId, useState } from "react";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { COMPONENT_DRAG_MIME } from "../canvas/Canvas";
-import { ICONS } from "../catalogUi";
+import { CATEGORY_TINT, ICONS } from "../catalogUi";
+import { cn } from "@/lib/utils";
 import { useEditorStore } from "../store/editorContext";
 
 /** Component palette (PG-1): grouped, searchable, drag to the canvas or press Enter to add at the centre. */
@@ -94,7 +95,12 @@ export function Library({ canvasElement }: { canvasElement: () => HTMLElement | 
                         title={def.description}
                         aria-describedby={hintId}
                       >
-                        <span className="flex size-6 shrink-0 items-center justify-center rounded bg-muted">
+                        <span
+                          className={cn(
+                            "flex size-6 shrink-0 items-center justify-center rounded",
+                            CATEGORY_TINT[def.category],
+                          )}
+                        >
                           <Icon className="size-3.5" aria-hidden />
                         </span>
                         <span className="truncate">{def.name}</span>

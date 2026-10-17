@@ -9,6 +9,7 @@ import {
   type ArchEdge,
   type ArchNode,
 } from "@sdl/architecture";
+import { failuresFor } from "@sdl/simulation";
 import { ArrowRight, Copy, Lightbulb, Trash2 } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import { toast } from "sonner";
@@ -23,6 +24,9 @@ import { edgeCarries } from "../canvas/toFlow";
 import { FlowEditor } from "../flows/FlowEditor";
 import { OperationsEditor } from "../flows/OperationsEditor";
 import { usePlaygroundUi } from "../playgroundUi";
+import { NodeFailureControls } from "../simulation/FailureControls";
+import { NodeSimulationSummary } from "../simulation/NodeSimulationSummary";
+import { useOverlayResult } from "../simulation/simulationContext";
 import { useEditor, useEditorStore } from "../store/editorContext";
 import { ConfigField } from "./ConfigField";
 
@@ -155,6 +159,8 @@ function NodeInspector({ node }: { node: ArchNode }) {
   const doc = useEditor((s) => s.doc);
   const def = CATALOG[node.type];
   const Icon = ICONS[def.icon];
+  const simulation = useOverlayResult();
+  const simulated = simulation?.nodes[node.id];
 
   return (
     <div className="divide-y">
@@ -167,6 +173,11 @@ function NodeInspector({ node }: { node: ArchNode }) {
           <p className="text-xs text-muted-foreground">{def.description}</p>
         </div>
       </div>
+      {simulated && (
+        <Section title="Simulated load">
+          <NodeSimulationSummary result={simulated} />
+        </Section>
+      )}
       <Section title="Settings">
         <TextField
           label="Label"
@@ -197,6 +208,14 @@ function NodeInspector({ node }: { node: ArchNode }) {
       <Section title="Connections">
         <ConnectionsList node={node} />
       </Section>
+      {failuresFor(node.type).length > 0 && (
+        <Section title="Failure injection">
+          <NodeFailureControls node={node} />
+          <p className="text-xs text-muted-foreground">
+            Applies to this session&apos;s simulation only. Open the simulation to see the effect.
+          </p>
+        </Section>
+      )}
       <div className="flex gap-2 p-4">
         <Button size="sm" variant="outline" onClick={ui.duplicate}>
           <Copy className="size-3.5" /> Duplicate

@@ -31,6 +31,11 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      # Performance budget (150 nodes < 5 ms, 50-point sweep < 100 ms). Shared runners vary, so a miss
+      # is reported but doesn't fail the build; the budget is checked locally before release.
+      - name: Simulation benchmark (informational)
+        continue-on-error: true
+        run: pnpm --filter @sdl/simulation bench
 
   e2e:
     name: Web end-to-end (Playwright, guest mode)

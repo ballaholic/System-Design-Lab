@@ -45,7 +45,8 @@ Supabase-issued tokens and identify users correctly.
 - [x] B: Signing-key rotation: a token from a newly published key is accepted without a restart, and a never-published key stays rejected.
 - [x] B: End to end against the hosted project, a real Supabase session token is accepted and the API's user ID equals the Supabase user ID. **Passed 2026-10-17** (17/17, live test not skipped). Confirmed: issuer `https://<ref>.supabase.co/auth/v1`, audience `authenticated`, JWKS at `/auth/v1/.well-known/jwks.json`, asymmetric signing (the API accepts only ES256/RS256), `role = authenticated`, UUID `sub`, and tampered tokens rejected. Still to confirm in Phase 1, where the AI gate needs it: the exact algorithm and the location of `email_verified`.
 
-Results: [prototypes/simulation/README.md](../prototypes/simulation/README.md) (30 tests) and
+Results: the simulation prototype (30 tests, promoted to `packages/simulation` in Phase 3; see its
+history in git) and
 [prototypes/auth-spike/README.md](../prototypes/auth-spike/README.md) (16 offline tests + 1 live test).
 
 ### Live Supabase integration test — completed 2026-10-17
@@ -129,15 +130,15 @@ Testing Platform runner, and `dotnet test` only finds it from that folder.
   Events, Sweep chart), failure-injection menu on nodes and in the toolbar, active-failure chips,
   "How the simulator works" page generated from the registry.
 
-**Acceptance criteria**
-- [ ] Engine unit tests cover each role's behaviour, cache-aside with and without a cache failure, the shedding math, success propagation through fan-out, queue backlog growth, the stream fan-out vs. queue competing-consumer difference, each failure scenario, invalid-document handling, and determinism (same input gives a deep-equal output).
-- [ ] Golden tests: the URL Shortener stage topologies produce the expected statuses and success rates within tolerance.
-- [ ] Simulating a 150-node document takes < 5 ms, and a 50-point sweep < 100 ms, measured with a Vitest benchmark.
-- [ ] In the UI: raising RPS until the DB saturates turns the DB "saturated" (colour, icon, and text), lists it first in bottlenecks, and drops the success rate; adding a cache at 80% hit rate fixes it.
-- [ ] Injecting *primary DB down* with a cache present: reads succeed at roughly the hit rate, writes are at 0%, and an "unmodeled: failover" event appears if the design contains a second DB.
-- [ ] Injecting *worker down* shows backlog growth while publisher success stays at 100%.
-- [ ] Every result view shows engine version and links to assumptions. No metric shown in the UI originates outside the engine (code review check).
-- [ ] Works fully for guests with no network calls.
+**Acceptance criteria** (status 2026-10-17: complete. The UI criteria are covered by Playwright tests in guest mode and were also checked by hand.)
+- [x] Engine unit tests cover each role's behaviour, cache-aside with and without a cache failure, the shedding math, success propagation through fan-out, queue backlog growth, the stream fan-out vs. queue competing-consumer difference, each failure scenario, invalid-document handling, and determinism (same input gives a deep-equal output). *(86 tests, 99.7% statements; the prototype's 30 tests are the regression baseline.)*
+- [x] Golden tests: the URL Shortener stage topologies produce the expected statuses and success rates within tolerance. *(`packages/simulation/test/golden.test.ts`, ±0.5 percentage points.)*
+- [x] Simulating a 150-node document takes < 5 ms, and a 50-point sweep < 100 ms, measured with a Vitest benchmark. *(Measured locally: ~2 ms and ~12 ms. `pnpm --filter @sdl/simulation bench`; informational in CI because shared runners vary.)*
+- [x] In the UI: raising RPS until the DB saturates turns the DB "saturated" (colour, icon, and text), lists it first in bottlenecks, and drops the success rate; adding a cache at 80% hit rate fixes it. *(e2e)*
+- [x] Injecting *primary DB down* with a cache present: reads succeed at roughly the hit rate, writes are at 0%, and an "unmodeled: failover" event appears if the design contains a second DB. *(e2e)*
+- [x] Injecting *worker down* shows backlog growth while publisher success stays at 100%. *(e2e)*
+- [x] Every result view shows engine version and links to assumptions. No metric shown in the UI originates outside the engine (code review check). *(The panel header shows both; the UI only formats engine output. The one derived display value, the read/write split of the traffic input, comes from the operation shares, not the engine.)*
+- [x] Works fully for guests with no network calls. *(e2e records requests while simulating.)*
 
 ## Phase 4 — URL Shortener challenge (Guided mode) and progress
 

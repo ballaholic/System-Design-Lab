@@ -99,7 +99,6 @@ system-design-lab/
 │  ├─ challenge.schema.json
 │  └─ fixtures/                    # versioned sample documents for compatibility tests (ADR-022)
 ├─ prototypes/                     # Phase 0 experiments (not production code)
-│  ├─ simulation/                  #   request-flow engine prototype + tests
 │  └─ auth-spike/                  #   ASP.NET + Supabase token validation spike
 ├─ server/
 │  ├─ SystemDesignLab.sln
@@ -394,6 +393,16 @@ These are tuned for clear lessons in the challenges and labelled "illustrative".
 
 In the browser (main thread; Web Worker later if sweeps grow). Guests get full simulation with no
 server involvement.
+
+*As built in Phase 3 (2026-10), engine v1.0.0:*
+
+- `@sdl/simulation` reuses `@sdl/architecture` validation (§6.6) and evaluation order, and normalizes configs with catalog defaults. A (document, scenario) pair is prepared once (validation, order, capacities, routing capability) and reused for every point of a sweep.
+- CDN: when `cacheableOperations` is unset, all read operations are cacheable. Caching a write operation emits an `unmodeled` event.
+- Event stream: each connected worker with a flow for the message is one consumer group. A worker fed by a stream uses at most `partitions` instances. A broker's `backlogGrowthPerSec` is the total over all consumer groups.
+- Failures apply to: `database-primary-down` → SQL, NoSQL, object storage; `cache-down` → cache; `app-instance-failure` → API server; `worker-down` → background worker. Failures on missing or unsuitable components are ignored with a `FAILURE_NOT_APPLICABLE` warning; instance failures on one server add up.
+- Additional `unmodeled` events: a stream whose lag grows (retention), a cache coming back cold after `cache-down`, and replacement of failed instances.
+- `inputHash` covers the document without `layout`, `notes` and its saved `traffic`, plus the traffic and scenario actually used, and the engine version.
+- In the editor, traffic is saved in the document (`traffic`, undoable). The read-share slider writes a `mix` override that keeps relative shares within reads and within writes. Injected failures are session state: not saved and not in undo history.
 
 ## 7. Authentication and authorization
 

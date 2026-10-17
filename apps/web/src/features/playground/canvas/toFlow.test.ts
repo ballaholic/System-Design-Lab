@@ -79,3 +79,41 @@ describe("toFlow", () => {
     expect(byId["api-spare"]!.data).toMatchObject({ carries: [], label: "unused" });
   });
 });
+
+describe("simulation overlay", () => {
+  it("adds status, utilization, injected failures and edge rates while a result is shown", async () => {
+    const { simulate } = await import("@sdl/simulation");
+    const { urlShortenerDesign } = await import("../test/designs");
+    const doc = urlShortenerDesign();
+    const scenario = { failures: [{ kind: "database-primary-down" as const, nodeId: "db" }] };
+    const result = simulate({ ...doc, traffic: { totalRps: 11_000 } }, { totalRps: 11_000 }, scenario);
+    if (result.status !== "ok") throw new Error("invalid");
+
+    const nodes = toFlowNodes(doc, EMPTY_SELECTION, [], new Map(), { result, scenario });
+    const byId = Object.fromEntries(nodes.map((n) => [n.id, n.data.sim]));
+    expect(byId.db).toEqual({ status: "down", failed: true });
+    expect(byId.api).toMatchObject({ status: "ok", failed: false });
+    expect(byId.api!.utilization).toBeCloseTo(11 / 16);
+    expect(byId.client).toEqual({ status: "ok", failed: false });
+
+    const edges = toFlowEdges(doc, EMPTY_SELECTION, [], result);
+    expect(edges.find((e) => e.id === "lb-api")!.data!.sim).toEqual({
+      rate: 11_000,
+      maxRate: 11_000,
+      tone: "flow",
+    });
+    // Traffic into the failed database is shown as failing.
+    expect(edges.find((e) => e.id === "api-db")!.data!.sim!.tone).toBe("bad");
+    expect(toFlowEdges(doc, EMPTY_SELECTION, [])[0]!.data!.sim).toBeUndefined();
+  });
+
+  it("marks a connection just made and its two components so the canvas can acknowledge it", async () => {
+    const { urlShortenerDesign } = await import("../test/designs");
+    const doc = urlShortenerDesign();
+    const fresh = { edgeId: "lb-api", source: "lb", target: "api", at: 42 };
+    const nodes = toFlowNodes(doc, EMPTY_SELECTION, [], new Map(), null, fresh);
+    expect(nodes.filter((n) => n.data.pulse === 42).map((n) => n.id)).toEqual(["lb", "api"]);
+    const edges = toFlowEdges(doc, EMPTY_SELECTION, [], null, fresh);
+    expect(edges.filter((e) => e.data!.drawn === 42).map((e) => e.id)).toEqual(["lb-api"]);
+  });
+});

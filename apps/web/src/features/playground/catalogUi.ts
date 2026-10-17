@@ -1,4 +1,4 @@
-import { type ArchNode, CATALOG, type IconKey } from "@sdl/architecture";
+import { type ArchNode, CATALOG, type ComponentCategory, type IconKey } from "@sdl/architecture";
 import {
   Activity,
   Archive,
@@ -74,3 +74,12 @@ export function summarizeConfig(node: ArchNode): string {
 export function componentName(node: ArchNode): string {
   return CATALOG[node.type].name;
 }
+
+/** Icon tile colours per category, so a design reads at a glance. Colour is decorative here: names say it all. */
+export const CATEGORY_TINT: Record<ComponentCategory, string> = {
+  client: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  application: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  caching: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  storage: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  messaging: "bg-pink-500/15 text-pink-700 dark:text-pink-300",
+};

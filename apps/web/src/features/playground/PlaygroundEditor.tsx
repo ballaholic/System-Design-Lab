@@ -18,6 +18,9 @@ import { Canvas } from "./canvas/Canvas";
 import { Inspector } from "./inspector/Inspector";
 import { Library } from "./library/Library";
 import { OutlineView } from "./outline/OutlineView";
+import { SimulationPanel } from "./simulation/SimulationPanel";
+import { useSimulation } from "./simulation/simulationContext";
+import { SimulationProvider } from "./simulation/SimulationProvider";
 import type { Persistence } from "./persistence/saveStatus";
 import { type PlaygroundUi, PlaygroundUiContext } from "./playgroundUi";
 import { useEditor, useEditorStore } from "./store/editorContext";
@@ -30,7 +33,16 @@ const wide = () =>
   typeof window === "undefined" || window.matchMedia?.("(min-width: 1024px)").matches !== false;
 
 export function PlaygroundEditor({ persistence }: { persistence: Persistence }) {
+  return (
+    <SimulationProvider>
+      <EditorLayout persistence={persistence} />
+    </SimulationProvider>
+  );
+}
+
+function EditorLayout({ persistence }: { persistence: Persistence }) {
   const store = useEditorStore();
+  const simulation = useSimulation();
   const issues = useEditor((s) => s.issues);
   const { fitView } = useReactFlow();
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -84,6 +96,10 @@ export function PlaygroundEditor({ persistence }: { persistence: Persistence }) 
         // Wait a frame so the canvas is visible before moving the viewport.
         requestAnimationFrame(() => void fitView({ nodes: [{ id }], duration: 300, maxZoom: 1.2 }));
       },
+      showIssues: () => {
+        setInspectorOpen(true);
+        setPanel("issues");
+      },
       save: persistence.saveNow,
     }),
     [store, deleteNow, fitView, persistence.saveNow],
@@ -117,14 +133,17 @@ export function PlaygroundEditor({ persistence }: { persistence: Persistence }) 
               <Library canvasElement={() => canvasRef.current} />
             </aside>
           )}
-          <div ref={canvasRef} className={cn("relative min-w-0 flex-1", view !== "diagram" && "hidden")}>
-            <Canvas />
-          </div>
-          {view === "outline" && (
-            <div className="min-w-0 flex-1">
-              <OutlineView onSelectNode={ui.focusNode} />
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div ref={canvasRef} className={cn("relative min-h-0 flex-1", view !== "diagram" && "hidden")}>
+              <Canvas />
             </div>
-          )}
+            {view === "outline" && (
+              <div className="min-h-0 flex-1">
+                <OutlineView onSelectNode={ui.focusNode} />
+              </div>
+            )}
+            {simulation.open && <SimulationPanel />}
+          </div>
           {inspectorOpen && (
             <aside
               aria-label="Inspector"
