@@ -78,8 +78,8 @@ Design notes:
 type ComponentDefinition<C> = {
   type: ComponentType;                 // e.g. "redis-cache"
   category: "client" | "application" | "storage" | "caching" | "messaging";
-  role: "source" | "distributor" | "service" | "cache" | "edge-cache"
-      | "store" | "queue" | "stream";  // drives simulation routing (ARCHITECTURE §6.3)
+  role: "source" | "distributor" | "service" | "consumer" | "cache" | "edge-cache"
+      | "store" | "queue" | "stream";  // drives simulation routing (ARCHITECTURE §6.3); consumer = background worker
   display: { name: string; description: string; icon: IconKey };
   configSchema: ZodType<C>;            // also drives inspector form generation
   defaults: C;
@@ -95,12 +95,12 @@ Initial component types and key configuration:
 
 | Type | Role | Key config (illustrative defaults) |
 |---|---|---|
-| `web-client` | source | `share` (traffic weight, 1) |
-| `mobile-client` | source | `share` (1) |
+| `web-client` | source | `share` (traffic weight, 1), `operations?` (operations it sends; default all) |
+| `mobile-client` | source | `share` (1), `operations?` |
 | `api-gateway` | distributor | `capacityRps` (50k), `rateLimitRps?` (optional; excess rejected) |
 | `load-balancer` | distributor | `capacityRps` (50k) |
 | `api-server` | service | `instances` (2), `capacityPerInstanceRps` (1k), `failedInstances` (scenario-driven, not user config) |
-| `background-worker` | service (consumer) | `instances` (1), `throughputPerInstance` (200 msg/s) |
+| `background-worker` | consumer | `instances` (1), `throughputPerInstance` (200 msg/s) |
 | `sql-database` | store | `readCapacity` (5k/s), `writeCapacity` (2k/s) |
 | `nosql-database` | store | `readCapacity` (20k/s), `writeCapacity` (10k/s) |
 | `object-storage` | store | `readCapacity` (50k/s), `writeCapacity` (10k/s); labelled "effectively high" |

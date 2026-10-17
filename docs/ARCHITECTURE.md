@@ -187,6 +187,15 @@ React Flow ─────────────► editor store ────�
   warns before deleting an edge that flows use.
 - Simulation overlays are derived in selectors and never written into the document.
 
+*As built in Phase 2 (2026-10):*
+
+- One Zustand store per editing session (`createEditorStore`). React Flow 12 renders it controlled; nodes are mirrored into local state only to keep measured sizes and smooth dragging, and a drag commits one history entry on drag stop. Text edits coalesce per field within 1 s.
+- Catalog roles include `consumer` (background worker: a service that only consumes messages) and `edge-cache` (CDN).
+- Flow nesting (max three levels) is spelled out level by level in the Zod schema, so the generated JSON Schema has no recursion. Connections out of services count for the evaluation order only when a flow uses them.
+- Signed-in edits keep a local draft until the server acknowledges the save. Guest designs use an index key plus one key per design; guest URLs are `/playground/local-<uuid>`, and the UUID is the import idempotency key.
+- The API validates documents with JsonSchema.Net 9.4 against the generated schema, embedded at build time, with per-endpoint request body limits.
+- A small Playwright suite (guest mode, `apps/web/e2e`) runs in CI ahead of Phase 6, because jsdom can't exercise dragging and connecting on the canvas.
+
 ### 5.3 Persistence and guest mode
 
 - **Guest:** designs (up to 10) and guest challenge progress autosave to `localStorage` through a
