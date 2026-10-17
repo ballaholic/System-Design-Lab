@@ -16,6 +16,15 @@ import "@xyflow/react/dist/base.css";
 import { type DragEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useTheme } from "@/app/themeContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { NodeFailureMenuItems } from "../simulation/FailureControls";
+import { useOverlayResult } from "../simulation/simulationContext";
 import { useEditor, useEditorStore } from "../store/editorContext";
 import { ComponentNode } from "./ComponentNode";
 import { ConnectionEdge } from "./ConnectionEdge";
@@ -38,15 +47,22 @@ export function Canvas() {
   const doc = useEditor((s) => s.doc);
   const selection = useEditor((s) => s.selection);
   const issues = useEditor((s) => s.issues);
+  const scenario = useEditor((s) => s.scenario);
+  const overlay = useOverlayResult();
   const { resolvedTheme } = useTheme();
+  const [menu, setMenu] = useState<{ nodeId: string; x: number; y: number } | null>(null);
   const { screenToFlowPosition } = useReactFlow();
 
   const measured = useRef<Measured>(new Map());
+  const sim = useMemo(() => (overlay ? { result: overlay, scenario } : null), [overlay, scenario]);
   const [nodes, setNodes] = useState<ComponentFlowNode[]>(() => toFlowNodes(doc, selection, issues));
   useEffect(() => {
-    setNodes(toFlowNodes(doc, selection, issues, measured.current));
-  }, [doc, selection, issues]);
-  const edges = useMemo(() => toFlowEdges(doc, selection, issues), [doc, selection, issues]);
+    setNodes(toFlowNodes(doc, selection, issues, measured.current, sim));
+  }, [doc, selection, issues, sim]);
+  const edges = useMemo(
+    () => toFlowEdges(doc, selection, issues, overlay),
+    [doc, selection, issues, overlay],
+  );
 
   const applySelection = useCallback(
     (changes: Array<NodeChange | EdgeChange>, kind: "nodeIds" | "edgeIds") => {
@@ -136,40 +152,73 @@ export function Canvas() {
     [screenToFlowPosition, store],
   );
 
+  // Right-click a component for failure injection.
+  const onNodeContextMenu = useCallback(
+    (event: React.MouseEvent, node: ComponentFlowNode) => {
+      event.preventDefault();
+      store.getState().setSelection({ nodeIds: [node.id], edgeIds: [] });
+      setMenu({ nodeId: node.id, x: event.clientX, y: event.clientY });
+    },
+    [store],
+  );
+  const menuNode = menu ? doc.nodes.find((n) => n.id === menu.nodeId) : undefined;
+
   return (
-    <ReactFlow<ComponentFlowNode>
-      aria-label="Architecture diagram"
-      nodes={nodes}
-      edges={edges}
-      nodeTypes={nodeTypes}
-      edgeTypes={edgeTypes}
-      defaultEdgeOptions={defaultEdgeOptions}
-      onNodesChange={onNodesChange}
-      onEdgesChange={onEdgesChange}
-      onNodeDragStop={onNodeDragStop}
-      onConnect={onConnect}
-      onConnectEnd={onConnectEnd}
-      isValidConnection={isValidConnection}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      deleteKeyCode={null}
-      multiSelectionKeyCode={["Shift", "Meta", "Control"]}
-      connectionRadius={28}
-      colorMode={resolvedTheme}
-      minZoom={0.2}
-      maxZoom={2}
-      fitView
-      fitViewOptions={{ maxZoom: 1, padding: 0.2 }}
-    >
-      <Background gap={20} size={1} />
-      <Controls showInteractive={false} position="bottom-left" />
-      <MiniMap
-        pannable
-        zoomable
-        position="bottom-right"
-        ariaLabel="Diagram overview"
-        className="max-sm:!hidden"
-      />
-    </ReactFlow>
+    <>
+      <ReactFlow<ComponentFlowNode>
+        aria-label="Architecture diagram"
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
+        onNodesChange={onNodesChange}
+        onEdgesChange={onEdgesChange}
+        onNodeDragStop={onNodeDragStop}
+        onConnect={onConnect}
+        onConnectEnd={onConnectEnd}
+        isValidConnection={isValidConnection}
+        onDragOver={onDragOver}
+        onDrop={onDrop}
+        onNodeContextMenu={onNodeContextMenu}
+        deleteKeyCode={null}
+        multiSelectionKeyCode={["Shift", "Meta", "Control"]}
+        connectionRadius={28}
+        colorMode={resolvedTheme}
+        minZoom={0.2}
+        maxZoom={2}
+        fitView
+        fitViewOptions={{ maxZoom: 1, padding: 0.2 }}
+      >
+        <Background gap={20} size={1} />
+        <Controls showInteractive={false} position="bottom-left" />
+        <MiniMap
+          pannable
+          zoomable
+          position="bottom-right"
+          ariaLabel="Diagram overview"
+          className="max-sm:!hidden"
+        />
+      </ReactFlow>
+      <DropdownMenu open={menuNode !== undefined} onOpenChange={(open) => !open && setMenu(null)}>
+        <DropdownMenuTrigger asChild>
+          <span
+            aria-hidden
+            className="pointer-events-none fixed size-px"
+            style={{ left: menu?.x ?? 0, top: menu?.y ?? 0 }}
+          />
+        </DropdownMenuTrigger>
+        {menuNode && (
+          <DropdownMenuContent align="start" className="w-56">
+            <DropdownMenuLabel className="truncate">{menuNode.label}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+              Inject a failure (simulation only)
+            </DropdownMenuLabel>
+            <NodeFailureMenuItems node={menuNode} />
+          </DropdownMenuContent>
+        )}
+      </DropdownMenu>
+    </>
   );
 }

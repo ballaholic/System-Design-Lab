@@ -8,6 +8,8 @@ export interface PlaygroundUi {
   duplicate(): void;
   /** Selects a component and centres the canvas on it. */
   focusNode(id: NodeId): void;
+  /** Opens the inspector on the Issues tab. */
+  showIssues(): void;
   save(): void;
 }
 

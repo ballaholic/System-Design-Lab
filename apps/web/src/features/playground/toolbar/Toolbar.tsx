@@ -1,5 +1,6 @@
 import { useReactFlow } from "@xyflow/react";
 import {
+  Activity,
   List,
   Maximize,
   Network,
@@ -19,6 +20,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useSyncedState } from "@/lib/useSyncedState";
 import { cn } from "@/lib/utils";
 import type { Persistence } from "../persistence/saveStatus";
+import { FailuresMenu } from "../simulation/FailureControls";
+import { useSimulation } from "../simulation/simulationContext";
 import { useEditor, useEditorStore } from "../store/editorContext";
 import { SaveIndicator } from "./SaveIndicator";
 
@@ -89,6 +92,7 @@ export function Toolbar({
   const canRedo = useEditor((s) => s.future.length > 0);
   const { zoomIn, zoomOut, fitView } = useReactFlow();
   const [title, setTitle] = useSyncedState(persistence.title);
+  const simulation = useSimulation();
 
   return (
     <div className="flex h-11 shrink-0 items-center gap-1 border-b bg-background px-2">
@@ -131,14 +135,17 @@ export function Toolbar({
         >
           <Undo2 className="size-4" />
         </ToolButton>
-        <ToolButton
-          label="Redo"
-          shortcut={isMac ? "⇧⌘Z" : "Ctrl+Y"}
-          onClick={() => store.getState().redo()}
-          disabled={!canRedo}
-        >
-          <Redo2 className="size-4" />
-        </ToolButton>
+        {/* Redo is keyboard-only on phones, to leave room for the title. */}
+        <div className="hidden sm:block">
+          <ToolButton
+            label="Redo"
+            shortcut={isMac ? "⇧⌘Z" : "Ctrl+Y"}
+            onClick={() => store.getState().redo()}
+            disabled={!canRedo}
+          >
+            <Redo2 className="size-4" />
+          </ToolButton>
+        </div>
         <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden />
         <div className="hidden items-center gap-0.5 sm:flex">
           <ToolButton
@@ -164,6 +171,18 @@ export function Toolbar({
           </ToolButton>
         </div>
         <span className="mx-1 h-5 w-px bg-border" aria-hidden />
+        <ToolButton
+          label={simulation.open ? "Hide simulation" : "Simulate"}
+          onClick={() => simulation.setOpen(!simulation.open)}
+          pressed={simulation.open}
+        >
+          <Activity className="size-4" />
+        </ToolButton>
+        {/* On phones, failures are injected from the inspector to leave room for the title. */}
+        <div className="hidden sm:block">
+          <FailuresMenu />
+        </div>
+        <span className="mx-1 hidden h-5 w-px bg-border sm:block" aria-hidden />
         <ToolButton label="Diagram view" onClick={() => onViewChange("diagram")} pressed={view === "diagram"}>
           <Network className="size-4" />
         </ToolButton>

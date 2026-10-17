@@ -88,7 +88,7 @@ test("one drag is one undo step", async ({ page }) => {
 
 test("configures, duplicates and deletes with the keyboard", async ({ page }) => {
   await addByKeyboard(page, "API server");
-  const instances = page.getByLabel("Instances");
+  const instances = page.getByLabel("Instances", { exact: true });
   await instances.fill("5");
   await expect(node(page, "API server")).toContainText("5 ×");
 

@@ -184,6 +184,9 @@ importers:
       '@sdl/architecture':
         specifier: workspace:*
         version: link:../../packages/architecture
+      '@sdl/simulation':
+        specifier: workspace:*
+        version: link:../../packages/simulation
       '@supabase/supabase-js':
         specifier: ^2.118.0
         version: 2.118.0

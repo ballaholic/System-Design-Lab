@@ -20,8 +20,10 @@ import {
   setFlow,
   updateNode,
   validateArchitecture,
+  type TrafficProfile,
   type ValidationIssue,
 } from "@sdl/architecture";
+import { type Failure, type FailureScenario, normalizeScenario } from "@sdl/simulation";
 import { createStore } from "zustand/vanilla";
 
 export const HISTORY_LIMIT = 100;
@@ -34,6 +36,7 @@ export interface Selection {
 }
 
 export const EMPTY_SELECTION: Selection = { nodeIds: [], edgeIds: [] };
+export const NO_FAILURES: FailureScenario = { failures: [] };
 
 export type CommitResult<T = void> = { ok: true; value: T } | { ok: false; reason: string };
 
@@ -47,6 +50,8 @@ export interface EditorState {
   /** Increments on every document change, including undo and redo. Persistence compares it to what was saved. */
   revision: number;
   lastCommit: { key: string; at: number } | null;
+  /** Injected failures for simulation. Session only: not saved and not part of undo history. */
+  scenario: FailureScenario;
 
   /** Replaces the document and clears history (loading a design). */
   load(doc: ArchitectureDocument): void;
@@ -78,6 +83,9 @@ export interface EditorState {
   updateOperation(id: OperationId, patch: Partial<Omit<Operation, "id">>): void;
   deleteOperation(id: OperationId): void;
   setNotes(notes: string): void;
+  /** Saves the simulation traffic in the document (last-used inputs). */
+  setTraffic(traffic: TrafficProfile): void;
+  setFailures(failures: Failure[]): void;
 }
 
 export type EditorStore = ReturnType<typeof createEditorStore>;
@@ -100,6 +108,7 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
         revision: state.revision + 1,
         lastCommit: key === undefined ? null : { key, at },
         selection: pruneSelection(state.selection, next),
+        scenario: pruneScenario(state.scenario, next),
       });
     };
 
@@ -117,6 +126,7 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
         revision: state.revision + 1,
         lastCommit: null,
         selection: pruneSelection(state.selection, target),
+        scenario: pruneScenario(state.scenario, target),
       });
     };
 
@@ -128,6 +138,7 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
       issues: validateArchitecture(initial),
       revision: 0,
       lastCommit: null,
+      scenario: NO_FAILURES,
 
       load: (doc) =>
         set({
@@ -138,6 +149,7 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
           issues: validateArchitecture(doc),
           revision: 0,
           lastCommit: null,
+          scenario: NO_FAILURES,
         }),
       commit,
       undo: () => travel("past"),
@@ -282,8 +294,35 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
           },
           { coalesceKey: "notes" },
         ),
+
+      setTraffic: (traffic) =>
+        commit(
+          (d) =>
+            d.traffic?.totalRps === traffic.totalRps && sameMix(d.traffic.mix, traffic.mix)
+              ? d
+              : { ...d, traffic },
+          { coalesceKey: "traffic" },
+        ),
+
+      setFailures: (failures) => set({ scenario: pruneScenario({ failures }, get().doc) }),
     };
   });
+}
+
+/** Drops failures whose component was removed or no longer accepts them, and merges duplicates. */
+function pruneScenario(scenario: FailureScenario, doc: ArchitectureDocument): FailureScenario {
+  if (scenario.failures.length === 0) return scenario;
+  const { failures } = normalizeScenario(doc, scenario);
+  const unchanged =
+    failures.length === scenario.failures.length &&
+    failures.every((f, i) => JSON.stringify(f) === JSON.stringify(scenario.failures[i]));
+  return unchanged ? scenario : { failures };
+}
+
+function sameMix(a: TrafficProfile["mix"], b: TrafficProfile["mix"]): boolean {
+  if (!a || !b) return a === b;
+  const keys = Object.keys(a);
+  return keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k]);
 }
 
 function pruneSelection(selection: Selection, doc: ArchitectureDocument): Selection {

@@ -79,3 +79,25 @@ describe("toFlow", () => {
     expect(byId["api-spare"]!.data).toMatchObject({ carries: [], label: "unused" });
   });
 });
+
+describe("simulation overlay", () => {
+  it("adds status, utilization, injected failures and edge rates while a result is shown", async () => {
+    const { simulate } = await import("@sdl/simulation");
+    const { urlShortenerDesign } = await import("../test/designs");
+    const doc = urlShortenerDesign();
+    const scenario = { failures: [{ kind: "database-primary-down" as const, nodeId: "db" }] };
+    const result = simulate({ ...doc, traffic: { totalRps: 11_000 } }, { totalRps: 11_000 }, scenario);
+    if (result.status !== "ok") throw new Error("invalid");
+
+    const nodes = toFlowNodes(doc, EMPTY_SELECTION, [], new Map(), { result, scenario });
+    const byId = Object.fromEntries(nodes.map((n) => [n.id, n.data.sim]));
+    expect(byId.db).toEqual({ status: "down", failed: true });
+    expect(byId.api).toMatchObject({ status: "ok", failed: false });
+    expect(byId.api!.utilization).toBeCloseTo(11 / 16);
+    expect(byId.client).toEqual({ status: "ok", failed: false });
+
+    const edges = toFlowEdges(doc, EMPTY_SELECTION, [], result);
+    expect(edges.find((e) => e.id === "lb-api")!.data!.sim).toEqual({ rate: 11_000, maxRate: 11_000 });
+    expect(toFlowEdges(doc, EMPTY_SELECTION, [])[0]!.data!.sim).toBeUndefined();
+  });
+});
