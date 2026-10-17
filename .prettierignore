@@ -8,5 +8,7 @@ apps/web/src/components/ui/
 **/components.json
 schemas/architecture.schema.json
 schemas/challenge.schema.json
+schemas/simulator-capabilities.md
+schemas/fixtures/mentor/
 **/test-results/
 **/playwright-report/
