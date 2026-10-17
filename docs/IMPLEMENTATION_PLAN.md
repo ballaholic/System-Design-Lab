@@ -182,19 +182,19 @@ Testing Platform runner, and `dotnet test` only finds it from that folder.
   ("does not invent metrics", "does not reveal the answer in interviewer mode", "references node IDs that
   exist"), run manually or on a schedule. It isn't run in CI, because each run costs money.
 
-**Acceptance criteria**
-- [ ] No Anthropic key in the frontend bundle (CI grep of build output for the key prefix).
-- [ ] Tutor answers stream with the first token in under 3 s (p50 measured locally).
-- [ ] Reviewer on the stage-2 design returns ≥ 1 finding, and clicking a finding highlights the referenced nodes. Unknown node IDs from the model are dropped (unit test with a stubbed client).
-- [ ] When the simulation shows a saturated DB, the Reviewer references the engine's numbers. When asked for a metric that isn't in the result, it says it isn't known (eval set).
-- [ ] Interviewer doesn't give a full solution when asked directly in the first turns (eval set), and asks clarifying questions first.
-- [ ] Exceeding the per-minute limit returns 429 ProblemDetails with retry-after, and the UI shows a friendly message. Exceeding the daily quota disables input and shows when it resets.
-- [ ] Budget tests (fake Claude client with scripted usage): costs are computed from the configured price table; a reservation larger than the remaining $0.50 budget is rejected before calling Claude; concurrent requests can't overshoot the user budget or the global cap; settling releases unused reservation.
-- [ ] Mode defaults: Tutor uses Haiku 5.5, Interviewer and Reviewer use Sonnet 5.5, and all are overridable via configuration without a code change.
-- [ ] Guests and unverified users see the mentor panel with a clear sign-in or verify CTA, and the API returns 403 for them.
-- [ ] Integration tests (with a fake Claude client): ownership of conversations, quota accounting, persistence of usage and findings, a malformed context returns 400.
-- [ ] The kill switch disables AI without a redeploy (configuration reload).
-- [ ] J1 runs fully end to end, including step 10.
+**Acceptance criteria** (status 2026-10-18: implemented. Items marked *manual* need an Anthropic API key in the API's user secrets; the eval set is run by hand because it calls the real API.)
+- [x] No Anthropic key in the frontend bundle (CI grep of build output for the key prefix).
+- [ ] Tutor answers stream with the first token in under 3 s (p50 measured locally). *(Haiku with thinking off and low effort; manual.)*
+- [ ] Reviewer on the stage-2 design returns ≥ 1 finding, and clicking a finding highlights the referenced nodes *(component test ✓; a real review: manual)*. Unknown node IDs from the model are dropped *(unit and API tests ✓)*.
+- [ ] When the simulation shows a saturated DB, the Reviewer references the engine's numbers. When asked for a metric that isn't in the result, it says it isn't known. *(Eval scenarios `review-quotes-engine`, `tutor-database-reads`, `tutor-latency-unknown`, `tutor-cost-unknown`; run manually.)*
+- [ ] Interviewer doesn't give a full solution when asked directly in the first turns, and asks clarifying questions first. *(Eval scenarios `interview-*`; run manually.)*
+- [x] Exceeding the per-minute limit returns 429 ProblemDetails with retry-after, and the UI shows a friendly message. Exceeding the daily quota disables input and shows when it resets.
+- [x] Budget tests (fake Claude client with scripted usage): costs are computed from the configured price table; a reservation larger than the remaining $0.50 budget is rejected before calling Claude; concurrent requests can't overshoot the user budget or the global cap; settling releases unused reservation.
+- [x] Mode defaults: Tutor uses Haiku 5.5, Interviewer and Reviewer use Sonnet 5.5, and all are overridable via configuration without a code change.
+- [x] Guests and unverified users see the mentor panel with a clear sign-in or verify CTA, and the API returns 403 for them. *(Component, API and e2e tests.)*
+- [x] Integration tests (with a fake Claude client): ownership of conversations, quota accounting, persistence of usage and findings, a malformed context returns 400.
+- [x] The kill switch disables AI without a redeploy (configuration reload).
+- [ ] J1 runs fully end to end, including step 10. *(Steps 1–9, 11 and 12 were verified in Phase 4; step 10 needs a key: manual.)*
 
 ## Phase 6 — MVP completion
 
