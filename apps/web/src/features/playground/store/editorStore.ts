@@ -7,6 +7,7 @@ import {
   createNode,
   duplicateNodes,
   type EdgeId,
+  type EdgeSides,
   type FlowStep,
   LIMITS,
   type NodeId,
@@ -67,7 +68,8 @@ export interface EditorState {
   setSelection(selection: Selection): void;
 
   addComponent(type: ComponentType, position: Position): CommitResult<NodeId>;
-  connect(source: NodeId, target: NodeId): CommitResult<EdgeId>;
+  /** Connects two components; `sides` picks the sides of the boxes the line leaves and enters. */
+  connect(source: NodeId, target: NodeId, sides?: EdgeSides): CommitResult<EdgeId>;
   moveNodes(positions: Record<NodeId, Position>): void;
   renameNode(id: NodeId, label: string): void;
   setNodeConfig(id: NodeId, key: string, value: unknown): void;
@@ -176,14 +178,14 @@ export function createEditorStore(initial: ArchitectureDocument, now: () => numb
         return { ok: true, value: node.id };
       },
 
-      connect: (source, target) => {
+      connect: (source, target, sides = {}) => {
         const { doc } = get();
         const check = checkConnection(doc, source, target);
         if (!check.ok) return check;
         if (doc.edges.length >= LIMITS.edges) {
           return { ok: false, reason: `A design can have at most ${LIMITS.edges} connections.` };
         }
-        const { doc: next, edge } = addEdge(doc, source, target);
+        const { doc: next, edge } = addEdge(doc, source, target, undefined, sides);
         commit(() => next);
         set({
           selection: { nodeIds: [], edgeIds: [edge.id] },

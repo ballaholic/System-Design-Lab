@@ -4,6 +4,7 @@ import {
   buildGraph,
   createCapability,
   type EdgeId,
+  edgeSides,
   flowsOf,
   type NodeId,
   type OperationId,
@@ -106,11 +107,14 @@ export function toFlowEdges(
   return doc.edges.map((edge) => {
     const target = nodes.get(edge.target);
     const role = target ? roleOf(target.type) : null;
+    const sides = edgeSides(doc, edge.id);
     return {
       id: edge.id,
       type: "connection",
       source: edge.source,
       target: edge.target,
+      sourceHandle: sides.source,
+      targetHandle: sides.target,
       selected: selected.has(edge.id),
       data: {
         async: role === "queue" || role === "stream",

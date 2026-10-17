@@ -1,4 +1,4 @@
-import { CATALOG } from "@sdl/architecture";
+import { CATALOG, EDGE_SIDES, type EdgeSide } from "@sdl/architecture";
 import type { NodeStatus } from "@sdl/simulation";
 import { Handle, type NodeProps, Position } from "@xyflow/react";
 import { CircleAlert, TriangleAlert, Zap } from "lucide-react";
@@ -8,7 +8,15 @@ import { CATEGORY_TINT, ICONS, summarizeConfig } from "../catalogUi";
 import { formatPct, STATUS_UI } from "../simulation/simulationUi";
 import type { ComponentFlowNode, NodeSimulation } from "./toFlow";
 
-const handleClass = "!size-2.5 !border-2 !border-muted-foreground !bg-background";
+const handleClass =
+  "!size-2.5 !rounded-full !border-2 !border-muted-foreground !bg-background transition-transform hover:!scale-150 hover:!border-primary group-hover:!border-primary/70";
+
+const HANDLE_POSITION: Record<EdgeSide, Position> = {
+  top: Position.Top,
+  right: Position.Right,
+  bottom: Position.Bottom,
+  left: Position.Left,
+};
 
 const GLOW: Partial<Record<NodeStatus, string>> = {
   ok: "shadow-[0_0_16px_-6px_var(--success)]",
@@ -41,15 +49,15 @@ function ComponentNodeView({ data, selected }: NodeProps<ComponentFlowNode>) {
   const def = CATALOG[node.type];
   const Icon = ICONS[def.icon];
   const role = def.role;
-  // Clients only start requests and stores only receive them, so they show one handle.
-  const hasTarget = role !== "source";
-  const hasSource = role !== "store" && role !== "cache";
+  // A connection can start or end on any side (the canvas uses loose connection mode). Dragging from a box that
+  // sends requests makes it the source; stores and caches only receive, so dragging from one makes it the target.
+  const handleType = role === "store" || role === "cache" ? "target" : "source";
   const flash = useStatusFlashes(sim?.status);
 
   return (
     <div
       className={cn(
-        "sdl-pop-in relative w-48 rounded-lg border bg-card px-3 py-2.5 text-card-foreground shadow-sm transition-[box-shadow,border-color] duration-300",
+        "group sdl-pop-in relative w-48 rounded-lg border bg-card px-3 py-2.5 text-card-foreground shadow-sm transition-[box-shadow,border-color] duration-300",
         sim && cn("border-2", STATUS_UI[sim.status].border, GLOW[sim.status]),
         sim?.status === "saturated" && "sdl-breathe",
         selected && "border-primary ring-2 ring-primary/30",
@@ -69,7 +77,6 @@ function ComponentNodeView({ data, selected }: NodeProps<ComponentFlowNode>) {
           aria-hidden
         />
       )}
-      {hasTarget && <Handle type="target" position={Position.Left} className={handleClass} />}
       <div className="flex items-center gap-2.5">
         <div
           className={cn(
@@ -106,7 +113,15 @@ function ComponentNodeView({ data, selected }: NodeProps<ComponentFlowNode>) {
         )}
       </div>
       {sim && <SimulationRow sim={sim} />}
-      {hasSource && <Handle type="source" position={Position.Right} className={handleClass} />}
+      {EDGE_SIDES.map((side) => (
+        <Handle
+          key={side}
+          id={side}
+          type={handleType}
+          position={HANDLE_POSITION[side]}
+          className={handleClass}
+        />
+      ))}
     </div>
   );
 }

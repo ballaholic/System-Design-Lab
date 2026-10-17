@@ -1,8 +1,9 @@
-import { checkConnection, isComponentType } from "@sdl/architecture";
+import { checkConnection, EDGE_SIDES, type EdgeSide, isComponentType } from "@sdl/architecture";
 import {
   applyNodeChanges,
   Background,
   type Connection,
+  ConnectionMode,
   Controls,
   type EdgeChange,
   type FinalConnectionState,
@@ -36,6 +37,10 @@ const nodeTypes = { component: ComponentNode };
 const edgeTypes = { connection: ConnectionEdge };
 const defaultEdgeOptions = { markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 } };
 const NODE_CENTER = { x: 96, y: 28 };
+
+/** The side a handle sits on: handle ids are side names. */
+const sideOf = (handle: string | null | undefined): EdgeSide | undefined =>
+  EDGE_SIDES.find((side) => side === handle);
 
 /**
  * React Flow adapter. The editor store owns the document; nodes are mirrored into local state only so React
@@ -125,7 +130,10 @@ export function Canvas() {
 
   const onConnect = useCallback(
     (c: Connection) => {
-      const result = store.getState().connect(c.source, c.target);
+      const result = store.getState().connect(c.source, c.target, {
+        source: sideOf(c.sourceHandle),
+        target: sideOf(c.targetHandle),
+      });
       if (!result.ok) toast.error("Can't connect", { description: result.reason });
     },
     [store],
@@ -190,6 +198,7 @@ export function Canvas() {
         onNodeContextMenu={onNodeContextMenu}
         deleteKeyCode={null}
         multiSelectionKeyCode={["Shift", "Meta", "Control"]}
+        connectionMode={ConnectionMode.Loose}
         connectionRadius={28}
         colorMode={resolvedTheme}
         minZoom={0.2}

@@ -202,6 +202,7 @@ React Flow ─────────────► editor store ────�
 - Passing a stage records the criteria results as evidence (ADR-010) and, for signed-in users, saves a snapshot of the current document ("Stage N passed: …"). Guests are told that checkpoints need an account.
 - Guest attempts are stored like guest designs (`local-attempt-<uuid>`). The import sends them with the last batch of designs, linked by the design's import key.
 - Step suggestions for a service include every operation clients send, so accepting one doesn't hide the next.
+- Every component has a connection point on all four sides, so components can be stacked vertically. The canvas uses React Flow's loose connection mode: dragging from a component that sends requests makes it the source, and dragging from a store or cache makes it the target. The sides are saved in the document's `edgeLayout` (presentation only, ADR-015).
 
 ### 5.3 Persistence and guest mode
 

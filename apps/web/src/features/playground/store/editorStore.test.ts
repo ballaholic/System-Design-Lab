@@ -130,6 +130,18 @@ describe("editor store actions", () => {
     expect(s().revision).toBe(revision);
   });
 
+  it("connects between the sides the line was drawn from and to", () => {
+    const { s } = setup();
+    const api = s().addComponent("api-server", { x: 0, y: 0 });
+    const db = s().addComponent("sql-database", { x: 0, y: 200 });
+    if (!api.ok || !db.ok) throw new Error();
+    const edge = s().connect(api.value, db.value, { source: "bottom", target: "top" });
+    if (!edge.ok) throw new Error();
+    expect(s().doc.edgeLayout).toEqual({ [edge.value]: { source: "bottom", target: "top" } });
+    s().undo();
+    expect(s().doc).not.toHaveProperty("edgeLayout");
+  });
+
   it("deleting an edge removes flow steps that use it in the same undo step", () => {
     const { s } = setup();
     const api = s().addComponent("api-server", { x: 0, y: 0 });

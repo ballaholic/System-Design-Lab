@@ -16,9 +16,11 @@ async function dragOntoCanvas(page: Page, name: string, at: { x: number; y: numb
   await library(page).getByRole("button", { name, exact: true }).dragTo(canvas(page), { targetPosition: at });
 }
 
-async function connect(page: Page, from: Locator, to: Locator) {
-  const source = await from.locator(".react-flow__handle-right").boundingBox();
-  const target = await to.locator(".react-flow__handle-left").boundingBox();
+type Side = "top" | "right" | "bottom" | "left";
+
+async function connect(page: Page, from: Locator, to: Locator, sides: [Side, Side] = ["right", "left"]) {
+  const source = await from.locator(`.react-flow__handle-${sides[0]}`).boundingBox();
+  const target = await to.locator(`.react-flow__handle-${sides[1]}`).boundingBox();
   if (!source || !target) throw new Error("handle not found");
   await page.mouse.move(source.x + source.width / 2, source.y + source.height / 2);
   await page.mouse.down();
@@ -56,6 +58,36 @@ test("adds components by keyboard and by drag, connects them, and keeps the desi
   await page.reload();
   await expect(page.locator(".react-flow__node")).toHaveCount(3);
   await expect(page.locator(".react-flow__edge")).toHaveCount(2);
+});
+
+test("connects a component to one placed under it, from bottom to top, and keeps the sides", async ({
+  page,
+}) => {
+  await dragOntoCanvas(page, "API server", { x: 400, y: 150 });
+  // The view re-centres on the first component, so place the database relative to where the server landed.
+  const pane = (await canvas(page).boundingBox())!;
+  const placed = (await node(page, "API server").boundingBox())!;
+  await dragOntoCanvas(page, "SQL database", {
+    x: placed.x - pane.x + placed.width / 2,
+    y: placed.y - pane.y + 250,
+  });
+  await connect(page, node(page, "API server"), node(page, "SQL database"), ["bottom", "top"]);
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+
+  const assertVertical = async () => {
+    const server = (await node(page, "API server").boundingBox())!;
+    const database = (await node(page, "SQL database").boundingBox())!;
+    const line = (await page.locator(".react-flow__edge-path").first().boundingBox())!;
+    // The line runs from the bottom edge of the server down to the top edge of the database.
+    expect(Math.abs(line.y - (server.y + server.height))).toBeLessThan(8);
+    expect(Math.abs(line.y + line.height - database.y)).toBeLessThan(8);
+  };
+  await assertVertical();
+
+  await expect(page.getByRole("status").filter({ hasText: "Saved in this browser" })).toBeVisible();
+  await page.reload();
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1);
+  await assertVertical();
 });
 
 test("refuses an invalid connection and explains why", async ({ page }) => {
