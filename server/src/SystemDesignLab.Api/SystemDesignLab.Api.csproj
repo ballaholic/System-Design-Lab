@@ -8,6 +8,7 @@
     <!-- Generated from the TypeScript model (packages/architecture); one source of truth for both validators. -->
     <EmbeddedResource Include="..\..\..\schemas\architecture.schema.json" LogicalName="architecture.schema.json" Link="architecture.schema.json" />
     <EmbeddedResource Include="..\..\..\schemas\challenge.schema.json" LogicalName="challenge.schema.json" Link="challenge.schema.json" />
+    <EmbeddedResource Include="..\..\..\schemas\simulator-capabilities.md" LogicalName="simulator-capabilities.md" Link="simulator-capabilities.md" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Anthropic" Version="12.58.0" />
     <PackageReference Include="EFCore.NamingConventions" Version="10.0.1" />
     <PackageReference Include="JsonSchema.Net" Version="9.4.1" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.13" />

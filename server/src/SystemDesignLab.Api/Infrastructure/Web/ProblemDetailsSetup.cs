@@ -10,9 +10,11 @@ public static class ProblemDetailsSetup
         services.AddProblemDetails(options => options.CustomizeProblemDetails = context =>
         {
             var problem = context.ProblemDetails;
-            problem.Type = problem.Status switch
+            // A type set by the endpoint (e.g. mentor-quota-exceeded) wins over the generic one for its status.
+            var generic = problem.Type is null || problem.Type.StartsWith("https://tools.ietf.org/", StringComparison.Ordinal);
+            problem.Type = !generic ? problem.Type : problem.Status switch
             {
-                StatusCodes.Status400BadRequest when problem.Type is null or "https://tools.ietf.org/html/rfc9110#section-15.5.1" => ProblemTypes.Validation,
+                StatusCodes.Status400BadRequest => ProblemTypes.Validation,
                 StatusCodes.Status401Unauthorized => ProblemTypes.Unauthorized,
                 StatusCodes.Status403Forbidden => ProblemTypes.Forbidden,
                 StatusCodes.Status404NotFound => ProblemTypes.NotFound,

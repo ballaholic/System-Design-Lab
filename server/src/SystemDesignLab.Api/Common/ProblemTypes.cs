@@ -15,5 +15,11 @@ public static class ProblemTypes
     public const string AttemptNotInProgress = Base + "attempt-not-in-progress";
     public const string PreconditionRequired = Base + "precondition-required";
     public const string RateLimited = Base + "rate-limited";
+    public const string EmailNotVerified = Base + "email-not-verified";
+    public const string MentorUnavailable = Base + "mentor-unavailable";
+    public const string MentorBusy = Base + "mentor-busy";
+    public const string MentorQuotaExceeded = Base + "mentor-quota-exceeded";
+    public const string MentorPaused = Base + "mentor-paused";
+    public const string MentorFailed = Base + "mentor-failed";
     public const string Unexpected = Base + "unexpected";
 }

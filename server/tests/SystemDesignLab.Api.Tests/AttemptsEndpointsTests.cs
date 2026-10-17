@@ -112,10 +112,22 @@ public sealed class AttemptsEndpointsTests(PostgresFixture db)
             await client.PostAsJsonAsync("/api/attempts", new { challengeSlug = Slug, mode = "guided", architectureId = someoneElsesDesign }, Ct),
             "architectureId");
 
-        var interview = await TestData.ProblemAsync(
-            await client.PostAsJsonAsync("/api/attempts", new { challengeSlug = Slug, mode = "interview" }, Ct),
-            HttpStatusCode.BadRequest, "validation");
-        Assert.Equal("Interview mode arrives with the AI mentor.", interview.GetProperty("detail").GetString());
+        // Interview mode uses the AI mentor, so it needs a verified email.
+        var unverified = db.Api.CreateClientFor(Guid.NewGuid(), new() { ["email_verified"] = false });
+        await TestData.ProblemAsync(
+            await unverified.PostAsJsonAsync("/api/attempts", new { challengeSlug = Slug, mode = "interview" }, Ct),
+            HttpStatusCode.Forbidden, "email-not-verified");
+    }
+
+    [Fact]
+    public async Task A_verified_user_can_start_in_interview_mode()
+    {
+        db.SkipIfUnavailable();
+        var client = db.Api.CreateClientFor(Guid.NewGuid(), new() { ["email_verified"] = true });
+
+        var attempt = await StartAsync(client, new { challengeSlug = Slug, mode = "interview" });
+
+        Assert.Equal("interview", attempt.GetProperty("mode").GetString());
     }
 
     [Fact]
