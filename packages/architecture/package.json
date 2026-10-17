@@ -11,7 +11,7 @@
     "lint": "oxlint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
-    "schema": "tsx scripts/export-schema.ts"
+    "schema": "vitest run --config vitest.schema.config.ts"
   },
   "dependencies": {
     "zod": "^4.6.7"
@@ -21,7 +21,6 @@
     "@types/node": "^24.13.3",
     "@vitest/coverage-v8": "^5.0.5",
     "oxlint": "^1.81.0",
-    "tsx": "^4.23.15",
     "typescript": "~6.0.2",
     "vitest": "^5.0.5"
   }
