@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using SystemDesignLab.Api.Features.Architectures;
 using SystemDesignLab.Api.Features.Users;
 
 namespace SystemDesignLab.Api.Infrastructure.Persistence;
@@ -10,6 +11,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public const string MigrationsHistoryTable = "__ef_migrations_history";
 
     public DbSet<UserProfile> UserProfiles => Set<UserProfile>();
+    public DbSet<Architecture> Architectures => Set<Architecture>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

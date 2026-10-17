@@ -1,0 +1,3 @@
+# EF Core generates migrations; keep analyzer rules that only concern hand-written code out of them.
+[*.cs]
+dotnet_diagnostic.CA1861.severity = none
