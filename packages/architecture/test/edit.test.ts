@@ -101,17 +101,23 @@ describe("connection sides", () => {
     expect(withEdgeSides(half, "e1", { source: "right", target: "left" })).not.toHaveProperty("edgeLayout");
   });
 
-  it("can end on any side but never leave from the left, where connections come in", () => {
-    expect(checkEdgeSides({ source: "top", target: "right" })).toEqual({ ok: true });
-    expect(checkEdgeSides({ target: "left" })).toEqual({ ok: true });
+  it("never leave from the left or end on the right; top and bottom work both ways", () => {
+    expect(checkEdgeSides({ source: "top", target: "bottom" })).toEqual({ ok: true });
+    expect(checkEdgeSides({ source: "right", target: "left" })).toEqual({ ok: true });
+    expect(checkEdgeSides({ target: "right" })).toEqual({
+      ok: false,
+      reason: expect.stringContaining("can't end on the right side"),
+    });
     expect(checkEdgeSides({ source: "left" })).toEqual({
       ok: false,
       reason: expect.stringContaining("can't leave from the left side"),
     });
     const leaving = { ...twoBoxes(), edges: [{ id: "e1", source: "api", target: "db" }] };
-    expect(
-      ArchitectureDocumentSchema.safeParse({ ...leaving, edgeLayout: { e1: { source: "left" } } }).success,
-    ).toBe(false);
+    for (const sides of [{ source: "left" }, { target: "right" }]) {
+      expect(ArchitectureDocumentSchema.safeParse({ ...leaving, edgeLayout: { e1: sides } }).success).toBe(
+        false,
+      );
+    }
   });
 
   it("are removed with their connection and copied with duplicates", () => {

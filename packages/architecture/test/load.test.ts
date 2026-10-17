@@ -136,12 +136,16 @@ describe("loadArchitecture", () => {
       edgeLayout: {
         "api-db": { source: "left", target: "top" },
         "api-cache": { source: "middle" },
+        "api-queue": { source: "bottom", target: "right" },
         "lb-api": "bottom",
       },
     };
     const loaded = loadArchitecture(d);
     if (!loaded.ok) throw new Error(loaded.error);
-    expect(loaded.document.edgeLayout).toEqual({ "api-db": { target: "top" } });
+    expect(loaded.document.edgeLayout).toEqual({
+      "api-db": { target: "top" },
+      "api-queue": { source: "bottom" },
+    });
     expect(loaded.repairs).toEqual([]);
   });
 

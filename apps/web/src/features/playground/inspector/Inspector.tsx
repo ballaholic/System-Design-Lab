@@ -347,8 +347,9 @@ function EdgeSidesSection({ edge }: { edge: ArchEdge }) {
             </SelectTrigger>
             <SelectContent>
               {EDGE_SIDES.map((side) => (
-                <SelectItem key={side} value={side} className="text-xs">
+                <SelectItem key={side} value={side} disabled={side === "right"} className="text-xs">
                   {SIDE_LABEL[side]}
+                  {side === "right" && <span className="text-muted-foreground"> (lines leave here)</span>}
                 </SelectItem>
               ))}
             </SelectContent>

@@ -23,7 +23,7 @@ type ArchitectureDocument = {
   nodes: ArchNode[];
   edges: ArchEdge[];
   layout: Record<NodeId, { x: number; y: number }>;   // presentation; ignored by simulator
-  edgeLayout?: Record<EdgeId, { source?: SourceSide; target?: EdgeSide }>; // presentation: sides a line leaves/enters
+  edgeLayout?: Record<EdgeId, { source?: SourceSide; target?: TargetSide }>; // presentation: sides a line leaves/enters
   notes?: string;                                       // free-form user assumptions / notes (≤ 4 KB)
   traffic?: TrafficProfile;                             // last-used simulation inputs
 };
@@ -72,8 +72,8 @@ Design notes:
   missing keys are filled from defaults. This is also how the catalog evolves without document
   migrations.
 - `edgeLayout` follows the same rule as `layout`: it records which side of each box a connection
-  leaves and enters (`EdgeSide` is `"top" | "right" | "bottom" | "left"`). A connection never leaves from the left, where
-  connections come in, so `SourceSide` excludes it; on load, unusable sides are dropped quietly. Only sides that differ from the
+  leaves and enters (`EdgeSide` is `"top" | "right" | "bottom" | "left"`). Connections come in on the left and leave on the
+  right, so `SourceSide` excludes left and `TargetSide` excludes right; on load, unusable sides are dropped quietly. Only sides that differ from the
   default (out on the right, in on the left) are stored, entries go with their connection, and the
   simulator and its input hash ignore it. It's optional and additive, so it needed no version bump.
 - Document migrations (`schemaVersion` bumps) are needed only for structural changes.

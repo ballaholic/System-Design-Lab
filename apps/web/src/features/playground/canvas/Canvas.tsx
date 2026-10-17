@@ -199,11 +199,12 @@ export function Canvas() {
       if (state.isValid !== false || !state.toNode || !state.toHandle) return;
       // The end being moved is the source when the fixed end is the target.
       const movingSource = state.fromHandle?.type === "target";
-      const sideCheck = checkEdgeSides({ source: sideOf(state.toHandle.id) });
+      const side = sideOf(state.toHandle.id);
+      const sideCheck = checkEdgeSides(movingSource ? { source: side } : { target: side });
       const description =
         state.toNode.id !== (movingSource ? edge.source : edge.target)
           ? "Dragging an end moves it to another side of the same component. To connect a different component, draw a new connection."
-          : movingSource && !sideCheck.ok
+          : !sideCheck.ok
             ? sideCheck.reason
             : null;
       if (description) toast.error("Can't move the connection", { description });

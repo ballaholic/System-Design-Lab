@@ -161,6 +161,7 @@ describe("editor store actions", () => {
 
     const revision = s().revision;
     expect(s().setEdgeSides(edge.value, { source: "left" })).toMatchObject({ ok: false });
+    expect(s().setEdgeSides(edge.value, { target: "right" })).toMatchObject({ ok: false });
     expect(s().revision).toBe(revision);
     expect(s().setEdgeSides("missing", { source: "top" })).toMatchObject({ ok: false });
 

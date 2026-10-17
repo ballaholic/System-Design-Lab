@@ -5,11 +5,11 @@ import { type Migration, MIGRATIONS, migrateDocument } from "./migrations";
 import {
   type ArchitectureDocument,
   ArchitectureDocumentSchema,
-  EDGE_SIDES,
-  type EdgeSide,
   type EdgeSides,
   SOURCE_SIDES,
   type SourceSide,
+  TARGET_SIDES,
+  type TargetSide,
 } from "./schema";
 
 export type LoadResult =
@@ -71,7 +71,7 @@ export function loadArchitecture(raw: unknown, migrations: readonly Migration[] 
 
 /**
  * Connection sides are presentation only, so anything unusable (an unknown side, a connection leaving from the
- * left, an entry for a removed connection) is dropped quietly and the line falls back to the default side.
+ * left or ending on the right, an entry for a removed connection) is dropped quietly and the line falls back to the default side.
  */
 function keptEdgeSides(raw: object, edgeIds: Set<unknown>): Record<string, EdgeSides> {
   const kept: Record<string, EdgeSides> = {};
@@ -80,7 +80,7 @@ function keptEdgeSides(raw: object, edgeIds: Set<unknown>): Record<string, EdgeS
     const { source, target } = value as Record<string, unknown>;
     const sides: EdgeSides = {};
     if ((SOURCE_SIDES as readonly unknown[]).includes(source)) sides.source = source as SourceSide;
-    if ((EDGE_SIDES as readonly unknown[]).includes(target)) sides.target = target as EdgeSide;
+    if ((TARGET_SIDES as readonly unknown[]).includes(target)) sides.target = target as TargetSide;
     if (Object.keys(sides).length > 0) kept[id] = sides;
   }
   return kept;

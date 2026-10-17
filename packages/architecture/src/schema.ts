@@ -82,13 +82,14 @@ export const PositionSchema = z.object({
 });
 
 export const EDGE_SIDES = ["top", "right", "bottom", "left"] as const;
-/** The left side is where connections come in, so a connection never leaves from it. */
+/** The left side only takes connections in and the right side only sends them out; top and bottom do both. */
 export const SOURCE_SIDES = ["top", "right", "bottom"] as const;
+export const TARGET_SIDES = ["top", "bottom", "left"] as const;
 
 /** Which side of each box a connection leaves and enters. Unset sides default to right (out) and left (in). */
 export const EdgeSidesSchema = z.object({
   source: z.enum(SOURCE_SIDES).optional(),
-  target: z.enum(EDGE_SIDES).optional(),
+  target: z.enum(TARGET_SIDES).optional(),
 });
 
 export const TrafficProfileSchema = z.object({
@@ -158,10 +159,11 @@ export interface Position {
 
 export type EdgeSide = (typeof EDGE_SIDES)[number];
 export type SourceSide = (typeof SOURCE_SIDES)[number];
+export type TargetSide = (typeof TARGET_SIDES)[number];
 
 export interface EdgeSides {
   source?: SourceSide;
-  target?: EdgeSide;
+  target?: TargetSide;
 }
 
 export interface TrafficProfile {

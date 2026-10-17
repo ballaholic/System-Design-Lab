@@ -113,7 +113,7 @@ async function dragEnd(page: Page, end: "source" | "target", to: Locator, side: 
   await page.mouse.up();
 }
 
-test("moves either end of a connection to another side by dragging it, but never out of the left side", async ({
+test("moves either end of a connection to another side by dragging it, never out of the left or into the right", async ({
   page,
 }) => {
   await stackedPair(page);
@@ -131,6 +131,8 @@ test("moves either end of a connection to another side by dragging it, but never
 
   await dragEnd(page, "source", server, "left");
   await expect(page.getByText(/can't leave from the left side/)).toBeVisible();
+  await dragEnd(page, "target", database, "right");
+  await expect(page.getByText(/can't end on the right side/)).toBeVisible();
 
   await dragEnd(page, "target", page.locator(".react-flow__node").filter({ hasText: "API server" }), "top");
   await expect(page.getByText(/draw a new connection/)).toBeVisible();
@@ -146,6 +148,7 @@ test("moves the ends of a connection from the inspector", async ({ page }) => {
   await expect(page.getByRole("option", { name: /Left/ })).toBeDisabled();
   await page.getByRole("option", { name: "Bottom" }).click();
   await inspector.getByRole("combobox", { name: "Enters at" }).click();
+  await expect(page.getByRole("option", { name: /Right/ })).toBeDisabled();
   await page.getByRole("option", { name: "Top" }).click();
 
   const line = (await page.locator(".react-flow__edge-path").first().boundingBox())!;

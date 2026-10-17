@@ -24,7 +24,10 @@ export function checkConnectionTypes(source: ComponentType, target: ComponentTyp
   return { ok: false, reason: refusalReason(source, target) };
 }
 
-/** Checks the sides a connection is drawn between: any side except leaving from the left, where lines come in. */
+/**
+ * Checks the sides a connection is drawn between. Lines come in on the left and go out on the right, so a
+ * connection never leaves from the left or ends on the right; top and bottom work both ways.
+ */
 export function checkEdgeSides(sides: {
   source?: EdgeSide | undefined;
   target?: EdgeSide | undefined;
@@ -34,6 +37,13 @@ export function checkEdgeSides(sides: {
       ok: false,
       reason:
         "A connection can't leave from the left side of a box: that's where connections come in. Start it from the top, right or bottom.",
+    };
+  }
+  if (sides.target === "right") {
+    return {
+      ok: false,
+      reason:
+        "A connection can't end on the right side of a box: that's where connections leave. End it on the top, bottom or left.",
     };
   }
   return { ok: true };
