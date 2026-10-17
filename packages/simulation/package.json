@@ -1,0 +1,27 @@
+{
+  "name": "@sdl/simulation",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deterministic request-flow simulation engine: failure scenarios, capacity analysis, sweep and assumptions",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "oxlint",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "bench": "vitest bench --run"
+  },
+  "dependencies": {
+    "@sdl/architecture": "workspace:*"
+  },
+  "devDependencies": {
+    "@sdl/config": "workspace:*",
+    "@types/node": "^24.13.3",
+    "@vitest/coverage-v8": "^5.0.5",
+    "oxlint": "^1.81.0",
+    "typescript": "~6.0.2",
+    "vitest": "^5.0.5"
+  }
+}
