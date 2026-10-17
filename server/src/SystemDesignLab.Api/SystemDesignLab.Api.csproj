@@ -7,6 +7,13 @@
   <ItemGroup>
     <!-- Generated from the TypeScript model (packages/architecture); one source of truth for both validators. -->
     <EmbeddedResource Include="..\..\..\schemas\architecture.schema.json" LogicalName="architecture.schema.json" Link="architecture.schema.json" />
+    <EmbeddedResource Include="..\..\..\schemas\challenge.schema.json" LogicalName="challenge.schema.json" Link="challenge.schema.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Challenge content (ADR-008) ships with the API, which validates it at startup. Reference solutions are
+         test material for the content check, so they are left out. -->
+    <Content Include="..\..\..\content\challenges\**\*" Exclude="..\..\..\content\challenges\**\solutions\**" LinkBase="content\challenges" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>

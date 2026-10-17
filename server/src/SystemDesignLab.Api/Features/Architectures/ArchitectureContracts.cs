@@ -37,8 +37,24 @@ public sealed record UpdateArchitectureRequest(JsonElement Document);
 
 public sealed record ImportDesign(Guid ImportKey, string? Title, string? Description, JsonElement Document, string? ChallengeSlug);
 
-public sealed record ImportRequest(IReadOnlyList<ImportDesign>? Designs);
+/// <summary>A guest challenge attempt, imported with the guest's designs. Progress fields are validated like PATCH.</summary>
+public sealed record ImportAttempt(
+    Guid ImportKey,
+    string? ChallengeSlug,
+    int ChallengeVersion,
+    string? Mode,
+    string? Status,
+    string? CurrentStageId,
+    Guid? ArchitectureImportKey,
+    JsonElement StageResults,
+    JsonElement ExerciseAnswers,
+    JsonElement HintsRevealed,
+    DateTimeOffset StartedAt,
+    DateTimeOffset LastActivityAt,
+    DateTimeOffset? CompletedAt);
+
+public sealed record ImportRequest(IReadOnlyList<ImportDesign>? Designs, IReadOnlyList<ImportAttempt>? Attempts);
 
 public sealed record ImportResult(Guid ImportKey, Guid Id, bool Created);
 
-public sealed record ImportResponse(IReadOnlyList<ImportResult> Results);
+public sealed record ImportResponse(IReadOnlyList<ImportResult> Results, IReadOnlyList<ImportResult> AttemptResults);

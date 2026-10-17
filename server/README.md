@@ -6,7 +6,9 @@ ASP.NET Core (.NET 10) modular monolith: one project organised by feature folder
 src/SystemDesignLab.Api/
 ├─ Common/                 # problem type URIs and other shared contracts
 ├─ Features/Users/         # /api/me, lazy profile provisioning
-├─ Features/Architectures/ # saved designs: CRUD, If-Match concurrency, guest import
+├─ Features/Architectures/ # saved designs: CRUD, If-Match concurrency, snapshots, guest import
+├─ Features/Challenges/    # challenge catalog loaded from content/challenges at startup
+├─ Features/Attempts/      # challenge attempts and progress
 ├─ Infrastructure/
 │  ├─ Auth/                # Supabase JWT validation (JWKS), CurrentUser
 │  ├─ Persistence/         # AppDbContext (schema "app"), migrations
@@ -14,6 +16,10 @@ src/SystemDesignLab.Api/
 └─ Program.cs
 tests/SystemDesignLab.Api.Tests/   # xUnit v3; database tests use Testcontainers PostgreSQL
 ```
+
+Without Docker, database tests are skipped locally. To run them against any PostgreSQL server instead, set
+`SDL_TEST_POSTGRES` to a connection string for a user that can create databases; each run creates and drops a
+throwaway database.
 
 ## Configuration
 
@@ -51,6 +57,9 @@ dotnet ef migrations add <Name> --project server/src/SystemDesignLab.Api --outpu
 dotnet ef database update --project server/src/SystemDesignLab.Api
 ```
 
+After pulling a branch with a new migration (Phase 4 adds `AddChallengeAttemptsAndSnapshots`), run
+`dotnet ef database update` again before starting the API.
+
 Every new table must enable row-level security in its migration (see `InitialCreate`). CI fails if the
 model has changes without a migration.
 
@@ -68,7 +77,15 @@ model has changes without a migration.
 | PATCH | `/api/architectures/{id}` | owner | Rename / change description (`description: null` clears it); doesn't change the version |
 | DELETE | `/api/architectures/{id}` | owner | Delete → 204 |
 | POST | `/api/architectures/{id}/duplicate` | owner | Copy as "Copy of …" at version 1 → 201 |
-| POST | `/api/architectures/import` | user | Idempotent guest import of 1–10 designs keyed by `importKey` → `{ results: [{ importKey, id, created }] }` |
+| GET | `/api/architectures/{id}/snapshots` | owner | Snapshots, newest first: `{ items: [{ id, label, createdAt, nodeCount }] }` |
+| POST | `/api/architectures/{id}/snapshots` | owner | Snapshot `{ label, document? }` (the stored document when omitted) → 201; keeps the newest 20 |
+| POST | `/api/architectures/import` | user | Idempotent guest import of up to 10 designs and 10 attempts keyed by `importKey` → `{ results, attemptResults }` |
+| GET | `/api/challenges` | anonymous | Catalog `{ items: [{ slug, version, title, summary, difficulty, topics, order, stageCount, stages }] }` |
+| GET | `/api/challenges/{slug}` | anonymous | Definition as authored, plus each stage’s `briefMd` and the `starter` design |
+| GET | `/api/attempts?status=` | user | Attempts, most recently active first (max 100) |
+| GET | `/api/attempts/{id}` | owner | One attempt |
+| POST | `/api/attempts` | user | Start `{ challengeSlug, mode: "guided", architectureId?, restart? }` → 201; **409** `attempt-in-progress` with `attemptId` unless `restart: true` |
+| PATCH | `/api/attempts/{id}` | owner | Update `currentStageId`, `stageResults`, `exerciseAnswers`, `hintsRevealed`, `architectureId`, `status` (`completed`/`abandoned`); **409** once not in progress |
 | GET | `/openapi/v1.json` | Development only | OpenAPI document |
 
 Errors are RFC 9457 problem details with stable `type` URIs (`Common/ProblemTypes.cs`) and a `traceId`.
@@ -80,3 +97,11 @@ from `@sdl/architecture` and embedded in the API at build time) and limited to 2
 and `PUT` must send it back in `If-Match`. A missing `If-Match` returns **428**; a stale one returns **412**
 (`type` `.../conflict`) with `currentVersion`, so the client can offer reload or overwrite. Request bodies are
 limited per endpoint (512 KB for one document, 3 MB for import, 64 KB otherwise); larger bodies get **413**.
+
+**Challenges and attempts.** Challenge definitions are repo content (ADR-008): `content/challenges/**` (without
+`solutions/`) is copied next to the API and validated at startup against `schemas/challenge.schema.json`; invalid
+content stops the API from starting, with every problem listed. Set `Challenges:ContentPath` to load content from
+elsewhere. Attempt progress is evaluated in the browser and stored as evidence (ADR-010): the API checks that
+stage, exercise, option and hint ids exist in the current definition and that values have the documented shape,
+but never re-runs the simulation. At most one attempt per challenge is in progress (partial unique index).
+Interview mode returns 400 until the AI mentor arrives.

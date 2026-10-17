@@ -5,6 +5,8 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.EntityFrameworkCore;
 using SystemDesignLab.Api.Common;
+using SystemDesignLab.Api.Features.Attempts;
+using SystemDesignLab.Api.Features.Challenges;
 using SystemDesignLab.Api.Infrastructure.Auth;
 using SystemDesignLab.Api.Infrastructure.Persistence;
 using SystemDesignLab.Api.Infrastructure.Web;
@@ -39,6 +41,7 @@ public static class ArchitecturesEndpoints
         group.MapPatch("/{id:guid}", Rename).WithName("RenameArchitecture").WithRequestBodyLimit(64 * 1024);
         group.MapDelete("/{id:guid}", Delete).WithName("DeleteArchitecture");
         group.MapPost("/{id:guid}/duplicate", Duplicate).WithName("DuplicateArchitecture");
+        group.MapSnapshotsEndpoints();
         return api;
     }
 
@@ -246,17 +249,19 @@ public static class ArchitecturesEndpoints
     }
 
     /// <summary>
-    /// Idempotent guest import (AUTH-9): each design carries a client-generated key, and a key that was already
-    /// imported returns the existing design instead of creating another. Guest challenge attempts join this
-    /// endpoint in Phase 4.
+    /// Idempotent guest import (AUTH-9): each design and attempt carries a client-generated key, and a key that was
+    /// already imported returns the existing item instead of creating another. Everything is one transaction.
     /// </summary>
     private static async Task<Results<Ok<ImportResponse>, ValidationProblem>> Import(
         ImportRequest request, CurrentUser user, AppDbContext db, ArchitectureDocumentValidator validator,
-        TimeProvider clock, CancellationToken ct)
+        ChallengeCatalog catalog, TimeProvider clock, CancellationToken ct)
     {
         var designs = request.Designs ?? [];
-        if (designs.Count is 0 or > MaxImportBatch)
+        var attempts = request.Attempts ?? [];
+        if (designs.Count > MaxImportBatch || designs.Count + attempts.Count == 0)
             return Invalid(new() { ["designs"] = [$"Import between 1 and {MaxImportBatch} designs at a time."] }, "The import is invalid.");
+        if (attempts.Count > MaxImportBatch)
+            return Invalid(new() { ["attempts"] = [$"Import at most {MaxImportBatch} attempts at a time."] }, "The import is invalid.");
 
         var errors = new Dictionary<string, string[]>();
         var prepared = new List<(ImportDesign Design, string Title, string? Description, DocumentCheck Check)>();
@@ -274,8 +279,14 @@ public static class ArchitecturesEndpoints
             if (!check.IsValid) errors[$"{prefix}.document"] = check.Errors;
             prepared.Add((design, title, description, check));
         }
+        var preparedAttempts = new List<PreparedAttempt>();
+        for (var i = 0; i < attempts.Count; i++)
+        {
+            if (PrepareAttempt(attempts[i], $"attempts[{i}]", catalog, errors) is { } attempt) preparedAttempts.Add(attempt);
+        }
         if (errors.Count > 0) return Invalid(errors, "The import is invalid.");
 
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
         var results = new List<ImportResult>();
         var now = Now(clock);
         foreach (var (design, title, description, check) in prepared.DistinctBy(p => p.Design.ImportKey))
@@ -298,7 +309,99 @@ public static class ArchitecturesEndpoints
                 .SingleAsync(ct);
             results.Add(new ImportResult(design.ImportKey, storedId, storedId == id));
         }
-        return TypedResults.Ok(new ImportResponse(results));
+
+        var attemptResults = new List<ImportResult>();
+        foreach (var attempt in preparedAttempts.DistinctBy(a => a.Source.ImportKey))
+            attemptResults.Add(await ImportAttemptAsync(db, user.Id, attempt, ct));
+
+        await transaction.CommitAsync(ct);
+        return TypedResults.Ok(new ImportResponse(results, attemptResults));
+    }
+
+    private sealed record PreparedAttempt(
+        ImportAttempt Source, ChallengeEntry Challenge, string StageResults, string ExerciseAnswers, List<string> Hints);
+
+    private static PreparedAttempt? PrepareAttempt(
+        ImportAttempt attempt, string prefix, ChallengeCatalog catalog, Dictionary<string, string[]> errors)
+    {
+        var start = errors.Count;
+        if (attempt.ImportKey == Guid.Empty) errors[$"{prefix}.importKey"] = ["Import key is required."];
+        var challenge = attempt.ChallengeSlug is null ? null : catalog.Find(attempt.ChallengeSlug);
+        if (challenge is null)
+        {
+            errors[$"{prefix}.challengeSlug"] = ["Unknown challenge."];
+            return null;
+        }
+        if (attempt.Mode != AttemptModes.Guided) errors[$"{prefix}.mode"] = ["Mode must be \"guided\"."];
+        if (attempt.Status is null || !AttemptStatuses.All.Contains(attempt.Status))
+            errors[$"{prefix}.status"] = ["Status must be in_progress, completed or abandoned."];
+        if (attempt.ChallengeVersion < 1) errors[$"{prefix}.challengeVersion"] = ["Challenge version must be at least 1."];
+        AttemptValidation.StageId(attempt.CurrentStageId, challenge, $"{prefix}.currentStageId", errors);
+        var stageResults = attempt.StageResults.ValueKind == JsonValueKind.Undefined
+            ? "{}"
+            : AttemptValidation.StageResults(attempt.StageResults, challenge, $"{prefix}.stageResults", errors);
+        var answers = attempt.ExerciseAnswers.ValueKind == JsonValueKind.Undefined
+            ? "{}"
+            : AttemptValidation.ExerciseAnswers(attempt.ExerciseAnswers, challenge, $"{prefix}.exerciseAnswers", errors);
+        var hints = attempt.HintsRevealed.ValueKind == JsonValueKind.Undefined
+            ? []
+            : AttemptValidation.Hints(attempt.HintsRevealed, challenge, $"{prefix}.hintsRevealed", errors);
+        if (attempt.StartedAt == default) errors[$"{prefix}.startedAt"] = ["startedAt is required."];
+        if (attempt.LastActivityAt == default) errors[$"{prefix}.lastActivityAt"] = ["lastActivityAt is required."];
+        if (errors.Count > start || stageResults is null || answers is null || hints is null) return null;
+        return new PreparedAttempt(attempt, challenge, stageResults, answers, hints);
+    }
+
+    /// <summary>
+    /// Inserts one guest attempt, linking it to the design imported with the given guest key. When the user already
+    /// has an attempt in progress at the same challenge, the more recently active one stays in progress.
+    /// </summary>
+    private static async Task<ImportResult> ImportAttemptAsync(AppDbContext db, Guid userId, PreparedAttempt prepared, CancellationToken ct)
+    {
+        var source = prepared.Source;
+        var existingId = await db.Attempts.AsNoTracking()
+            .Where(a => a.UserId == userId && a.ImportKey == source.ImportKey)
+            .Select(a => (Guid?)a.Id)
+            .SingleOrDefaultAsync(ct);
+        if (existingId is { } already) return new ImportResult(source.ImportKey, already, false);
+
+        Guid? architectureId = source.ArchitectureImportKey is { } key
+            ? await db.Architectures.Where(a => a.OwnerId == userId && a.ImportKey == key).Select(a => (Guid?)a.Id).SingleOrDefaultAsync(ct)
+            : null;
+
+        var status = source.Status!;
+        if (status == AttemptStatuses.InProgress)
+        {
+            var other = await db.Attempts.SingleOrDefaultAsync(
+                a => a.UserId == userId && a.ChallengeSlug == prepared.Challenge.Slug && a.Status == AttemptStatuses.InProgress, ct);
+            if (other is not null)
+            {
+                if (other.LastActivityAt >= source.LastActivityAt) status = AttemptStatuses.Abandoned;
+                else
+                {
+                    other.Status = AttemptStatuses.Abandoned;
+                    await db.SaveChangesAsync(ct);
+                }
+            }
+        }
+
+        var id = Guid.CreateVersion7();
+        var completedAt = status == AttemptStatuses.Completed ? source.CompletedAt ?? source.LastActivityAt : (DateTimeOffset?)null;
+        var hints = prepared.Hints.ToArray();
+        await db.Database.ExecuteSqlInterpolatedAsync(
+            $"""
+            INSERT INTO app.challenge_attempts
+              (id, user_id, challenge_slug, challenge_version, mode, status, current_stage_id, architecture_id,
+               stage_results, exercise_answers, hints_revealed, import_key, started_at, last_activity_at, completed_at)
+            VALUES
+              ({id}, {userId}, {prepared.Challenge.Slug}, {source.ChallengeVersion}, {AttemptModes.Guided}, {status}, {source.CurrentStageId},
+               {architectureId}, CAST({prepared.StageResults} AS jsonb), CAST({prepared.ExerciseAnswers} AS jsonb), {hints},
+               {source.ImportKey}, {source.StartedAt}, {source.LastActivityAt}, {completedAt})
+            ON CONFLICT (user_id, import_key) WHERE import_key IS NOT NULL DO NOTHING
+            """,
+            ct);
+        var storedId = await db.Attempts.Where(a => a.UserId == userId && a.ImportKey == source.ImportKey).Select(a => a.Id).SingleAsync(ct);
+        return new ImportResult(source.ImportKey, storedId, storedId == id);
     }
 
     private static Task<Architecture?> Find(AppDbContext db, Guid id, Guid ownerId, CancellationToken ct) =>
