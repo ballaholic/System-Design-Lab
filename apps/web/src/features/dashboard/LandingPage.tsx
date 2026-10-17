@@ -38,10 +38,10 @@ export function LandingPage() {
         </p>
         <div className="flex flex-wrap gap-2">
           <Button asChild>
-            <Link to="/register">Create a free account</Link>
+            <Link to="/playground">Try the playground</Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link to="/login">Sign in</Link>
+            <Link to="/register">Create a free account</Link>
           </Button>
         </div>
       </section>
@@ -63,8 +63,8 @@ export function LandingPage() {
           ))}
         </ol>
         <p className="text-xs text-muted-foreground">
-          The playground, simulator, challenges and AI mentor are being built now and will appear here as they
-          ship.
+          The playground works without an account; designs stay in your browser until you sign in. The
+          simulator, challenges and AI mentor are being built now and will appear here as they ship.
         </p>
       </section>
     </div>

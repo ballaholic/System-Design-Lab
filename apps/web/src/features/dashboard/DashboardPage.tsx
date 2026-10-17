@@ -1,8 +1,10 @@
 import { CircleAlert, LayoutTemplate, Trophy } from "lucide-react";
+import { Link } from "react-router";
 import { EmptyState } from "@/components/EmptyState";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useArchitectureList } from "@/lib/api/architectures";
 import { errorMessage } from "@/lib/api/client";
 import { useMe } from "@/lib/api/me";
 
@@ -51,13 +53,52 @@ export function DashboardPage() {
           <h2 id="designs-heading" className="text-sm font-medium">
             Recent designs
           </h2>
-          <EmptyState
-            icon={LayoutTemplate}
-            title="No saved designs"
-            description="The architecture playground is coming soon. Designs you save will be listed here."
-          />
+          <RecentDesigns />
         </section>
       </div>
+    </div>
+  );
+}
+
+function RecentDesigns() {
+  const { data, isPending, error } = useArchitectureList();
+  if (isPending) return <Skeleton className="h-32" />;
+  if (error)
+    return <p className="text-sm text-muted-foreground">Couldn't load your designs: {errorMessage(error)}</p>;
+  if (data.length === 0) {
+    return (
+      <EmptyState
+        icon={LayoutTemplate}
+        title="No saved designs"
+        description="Designs you build in the playground are saved here automatically."
+        action={
+          <Button size="sm" asChild>
+            <Link to="/playground">Open the playground</Link>
+          </Button>
+        }
+      />
+    );
+  }
+  return (
+    <div className="grid gap-2">
+      <ul className="divide-y rounded-lg border">
+        {data.slice(0, 5).map((d) => (
+          <li key={d.id}>
+            <Link
+              to={`/playground/${d.id}`}
+              className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-accent"
+            >
+              <span className="truncate font-medium">{d.title}</span>
+              <span className="shrink-0 text-xs text-muted-foreground">
+                {d.nodeCount} component{d.nodeCount === 1 ? "" : "s"}
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <Link to="/designs" className="w-fit text-sm text-muted-foreground underline-offset-2 hover:underline">
+        All designs
+      </Link>
     </div>
   );
 }

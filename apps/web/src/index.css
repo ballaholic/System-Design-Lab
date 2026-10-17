@@ -142,3 +142,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* React Flow, themed from the tokens above. */
+.react-flow {
+  --xy-background-color: var(--background);
+  --xy-background-pattern-color: var(--border);
+  --xy-edge-stroke: var(--muted-foreground);
+  --xy-edge-stroke-selected: var(--primary);
+  --xy-connectionline-stroke: var(--primary);
+  --xy-handle-background-color: var(--background);
+  --xy-handle-border-color: var(--muted-foreground);
+  --xy-minimap-background-color: var(--card);
+  --xy-minimap-mask-background-color: oklch(from var(--background) l c h / 60%);
+  --xy-minimap-node-background-color: oklch(from var(--muted-foreground) l c h / 45%);
+  --xy-controls-button-background-color: var(--card);
+  --xy-controls-button-background-color-hover: var(--accent);
+  --xy-controls-button-color: var(--foreground);
+  --xy-controls-button-border-color: var(--border);
+  --xy-selection-background-color: oklch(from var(--primary) l c h / 8%);
+  --xy-selection-border: 1px dotted var(--primary);
+  --xy-attribution-background-color: transparent;
+}

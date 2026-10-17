@@ -1,10 +1,18 @@
-import { Link, NavLink, Outlet } from "react-router";
+import { Menu } from "lucide-react";
+import { Link, NavLink, Outlet, useMatches } from "react-router";
 import { Logo } from "@/components/Logo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { UserMenu } from "@/components/UserMenu";
 import { useAuth } from "@/features/auth/authContext";
+import { GuestImporter } from "@/features/playground/persistence/GuestImporter";
 import { cn } from "@/lib/utils";
 
 const navLinkClass = ({ isActive }: { isActive: boolean }) =>
@@ -30,6 +38,8 @@ function UpcomingNavItem({ label }: { label: string }) {
 
 export function AppShell() {
   const { status } = useAuth();
+  // Full-bleed routes (the playground) use the whole viewport below the header.
+  const fullBleed = useMatches().some((m) => (m.handle as { fullBleed?: boolean } | undefined)?.fullBleed);
 
   return (
     <div className="flex min-h-svh flex-col">
@@ -40,16 +50,39 @@ export function AppShell() {
         Skip to content
       </a>
       <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-        <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
+        <div className={cn("mx-auto flex h-14 items-center gap-3 px-4 sm:gap-6", !fullBleed && "max-w-6xl")}>
           <Logo />
           <nav aria-label="Main" className="hidden items-center gap-1 md:flex">
             <NavLink to="/" end className={navLinkClass}>
               {status === "authenticated" ? "Dashboard" : "Home"}
             </NavLink>
-            <UpcomingNavItem label="Playground" />
+            <NavLink to="/playground" className={navLinkClass}>
+              Playground
+            </NavLink>
+            <NavLink to="/designs" className={navLinkClass}>
+              My designs
+            </NavLink>
             <UpcomingNavItem label="Challenges" />
           </nav>
           <div className="ml-auto flex items-center gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open navigation">
+                  <Menu className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="md:hidden">
+                <DropdownMenuItem asChild>
+                  <Link to="/">{status === "authenticated" ? "Dashboard" : "Home"}</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/playground">Playground</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/designs">My designs</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <ThemeToggle />
             {status === "authenticated" && <UserMenu />}
             {status === "anonymous" && (
@@ -57,7 +90,7 @@ export function AppShell() {
                 <Button variant="ghost" size="sm" asChild>
                   <Link to="/login">Sign in</Link>
                 </Button>
-                <Button size="sm" asChild>
+                <Button size="sm" className="hidden sm:inline-flex" asChild>
                   <Link to="/register">Create account</Link>
                 </Button>
               </>
@@ -65,9 +98,13 @@ export function AppShell() {
           </div>
         </div>
       </header>
-      <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
+      <main
+        id="main"
+        className={fullBleed ? "flex min-h-0 flex-1 flex-col" : "mx-auto w-full max-w-6xl flex-1 px-4 py-8"}
+      >
         <Outlet />
       </main>
+      <GuestImporter />
     </div>
   );
 }
