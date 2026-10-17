@@ -1,6 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { ASSUMPTIONS, capabilitySummary, MENTOR_MAX_EVENTS, ROLE_SEMANTICS, toMentorSimulation } from "../src";
+import {
+  ASSUMPTIONS,
+  capabilitySummary,
+  MENTOR_MAX_EVENTS,
+  ROLE_SEMANTICS,
+  toMentorSimulation,
+} from "../src";
 import {
   CAPABILITIES_PATH,
   SAMPLE_CONTEXT_PATH,
